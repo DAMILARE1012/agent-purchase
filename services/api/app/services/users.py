@@ -12,14 +12,16 @@ from app.models import Account, User
 from app.security import Principal, Viewer
 from app.services import ledger
 
-WALLET_ROLES = {"member", "merchant"}
+# Roles with a balance on the platform. Staff roles (analyst, ops, admin) have none.
+WALLET_ROLES = {"shopper", "seller"}
 
 
 def primary_role(roles: frozenset[str]) -> str:
-    for role in ("ops", "analyst", "merchant"):
+    """A user with several Keycloak roles gets the most privileged one's workspace."""
+    for role in ("admin", "ops", "analyst", "seller"):
         if role in roles:
             return role
-    return "member"
+    return "shopper"
 
 
 def handle(user: User) -> str:

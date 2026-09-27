@@ -1,7 +1,9 @@
-// Scripted browser sign-in through the real OIDC flow:
+// Scripted browser sign-in through the real OIDC flow, for every role:
 // web /auth/login → Keycloak login form → /auth/callback → session cookie → BFF proxy → API.
+// Non-destructive: it creates no payments and resets nothing.
 // Run with the stack up: node web/scripts/smoke-login.mjs
 const WEB = process.env.WEB_URL ?? "http://localhost:3000";
+const PASSWORD = process.env.DEMO_USER_PASSWORD ?? "demo1234";
 let failures = 0;
 const jars = new Map(); // host → Map(name → value)
 
@@ -28,7 +30,8 @@ async function request(url, init = {}) {
   return res;
 }
 
-async function signIn(username, returnTo = "/wallet") {
+async function signIn(username, returnTo = "/home") {
+  jars.clear();
   const start = await request(`${WEB}/auth/login?returnTo=${encodeURIComponent(returnTo)}`);
   const authUrl = start.headers.get("location");
   const form = await request(authUrl);
@@ -38,7 +41,7 @@ async function signIn(username, returnTo = "/wallet") {
   const submit = await request(action, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ username, password: "demo1234", credentialId: "" }),
+    body: new URLSearchParams({ username, password: PASSWORD, credentialId: "" }),
   });
   const callback = submit.headers.get("location");
   const done = await request(callback);
@@ -50,51 +53,53 @@ const api = (path, init) => request(`${WEB}/api/v1/${path}`, init);
 // Signed out.
 let me = await (await api("me")).json();
 check("signed out → guest", me.authenticated === false, me);
+check("public verify page → 200", (await request(`${WEB}/verify`)).status === 200);
 
-// Sign in as Rita through Keycloak.
-const flow = await signIn("rita");
+// Sign-in flow, as the demo shopper.
+const flow = await signIn("sam");
 check("login redirects to Keycloak with PKCE", flow.authUrl.startsWith("http://localhost:8080/") && flow.authUrl.includes("code_challenge_method=S256"), flow.authUrl);
 check("Keycloak redirects back to /auth/callback", flow.callback?.startsWith(`${WEB}/auth/callback?`), flow.callback);
-check("callback lands on returnTo", flow.done.headers.get("location") === `${WEB}/wallet`, flow.done.headers.get("location"));
+check("callback lands on /home", flow.done.headers.get("location") === `${WEB}/home`, flow.done.headers.get("location"));
 const webJar = jars.get(new URL(WEB).host);
 check("session cookie set (httpOnly, opaque)", webJar.has("stc_sid") && !webJar.get("stc_sid").includes("."), [...webJar.keys()]);
 
-me = await (await api("me")).json();
-check("signed in as Rita via the proxy", me.authenticated && me.user.handle === "@rita", me);
-const wallet = await (await api("wallet")).json();
-check("wallet loads through the proxy", typeof wallet.balanceMinor === "number", wallet);
-
-// Mutations: CSRF check on Origin.
-const people = await (await api("users")).json();
-const sam = people.find((p) => p.handle === "@sam");
-const body = JSON.stringify({ toUserId: sam.userId, amountMinor: 100, note: "Proxy test" });
-const crossSite = await api("transfers", { method: "POST", headers: { "content-type": "application/json", origin: "https://evil.example", "idempotency-key": crypto.randomUUID() }, body });
+// CSRF: the proxy rejects cross-site mutations. Name enquiry is a harmless POST.
+const body = JSON.stringify({ bankCode: "990", accountNumber: "2000000022" });
+const crossSite = await api("name-enquiry", { method: "POST", headers: { "content-type": "application/json", origin: "https://evil.example" }, body });
 check("cross-site POST blocked", crossSite.status === 403, crossSite.status);
-const sameSite = await api("transfers", { method: "POST", headers: { "content-type": "application/json", origin: WEB, "idempotency-key": crypto.randomUUID() }, body });
-const created = await sameSite.json();
-check("same-site POST creates payment", sameSite.status === 200 && created.transfer?.status === "settled", created);
-
-// Pages render (server side) with the session.
-for (const path of ["/wallet", "/send", "/r", `/transactions/${created.transfer.tx}`]) {
-  check(`page ${path} → 200`, (await request(WEB + path)).status === 200);
-}
+const sameSite = await api("name-enquiry", { method: "POST", headers: { "content-type": "application/json", origin: WEB }, body });
+check("same-site POST reaches the API", sameSite.status === 200, sameSite.status);
 check("open redirect blocked", (await request(`${WEB}/auth/login?returnTo=//evil.example`)).status === 307);
+
+// Every role signs in, gets the right role from the API, and its pages render.
+const ROLES = [
+  ["sam", "shopper", ["/shop", "/shop/mandates", "/shop/mandates/new", "/shop/runs", "/shop/purchases", "/shop/balance"]],
+  ["ada", "seller", ["/seller", "/seller/catalog", "/seller/accounts"]],
+  ["morgan", "analyst", ["/support", "/support/disputes", "/support/sellers"]],
+  ["olivia", "ops", ["/ops", "/ops/agents", "/ops/traces", "/ops/evals", "/ops/range", "/ops/ledger"]],
+  ["kemi", "admin", ["/admin", "/admin/users"]],
+];
+for (const [username, role, pages] of ROLES) {
+  await signIn(username);
+  me = await (await api("me")).json();
+  check(`${username} is ${role}`, me.authenticated && me.user.role === role, me.user);
+  const hasBalance = Boolean(me.user?.accountId);
+  check(`${username} ${role === "shopper" || role === "seller" ? "has" : "has no"} balance`, hasBalance === (role === "shopper" || role === "seller"), me.user);
+  for (const path of pages) check(`${username}: page ${path} → 200`, (await request(WEB + path)).status === 200);
+}
+
+// Ops still reads the platform ledger through the proxy; others can't.
+await signIn("olivia");
+const summary = await (await api("ledger/summary")).json();
+check("olivia (ops) reads the ledger", summary.balanced === true, summary);
+await signIn("sam");
+check("sam (shopper) can't read the ledger", (await api("ledger/summary")).status === 403);
 
 // Sign out.
 const out = await request(`${WEB}/auth/logout`, { method: "POST", headers: { origin: WEB } });
 check("logout redirects to Keycloak end-session", out.status === 303 && out.headers.get("location")?.includes("/protocol/openid-connect/logout"), out.headers.get("location"));
 me = await (await api("me")).json();
 check("after logout → guest", me.authenticated === false, me);
-
-// Ops sees the ledger through the web app.
-jars.clear();
-await signIn("olivia", "/ledger");
-const summary = await (await api("ledger/summary")).json();
-check("olivia (ops) reads the ledger via the proxy", summary.balanced === true, summary);
-
-// Leave the demo data as we found it.
-const reset = await request(`${WEB}/api/v1/sandbox/reset`, { method: "POST", headers: { origin: WEB } });
-check("demo data reset (as ops)", reset.status === 200, reset.status);
 
 console.log(failures ? `\n${failures} FAILED` : "\nALL PASSED");
 process.exit(failures ? 1 : 0);

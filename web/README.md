@@ -1,6 +1,6 @@
-# Scan-to-Confirm: web app
+# Mandate Gate: web app
 
-The web UI and backend-for-frontend (BFF) for Scan-to-Confirm. Run the whole stack with Docker from the repository root; see [`../README.md`](../README.md).
+The web UI and backend-for-frontend (BFF) for Mandate Gate. Run the whole stack with Docker from the repository root; see [`../README.md`](../README.md).
 
 Stack: **Next.js 16** (App Router), **Redux Toolkit** (RTK Query for the API, slices for UI state), **Tailwind CSS v4**, TypeScript.
 
@@ -31,8 +31,11 @@ The defaults in `src/server/config.ts` point at the Docker services on `localhos
 src/
   app/                      Routes: each page renders one feature component
     (marketing)/            The public landing page at /
-    (app)/                  Pages with the app header
-      wallet/ activity/ send/ transactions/[tx]/ r/ risk/ ledger/ signin-error/
+    (app)/                  Pages with the app shell
+      home/                 Sign-in lands here and redirects to the role's workspace
+      shop/ seller/ support/ ops/ admin/   One workspace per role; each layout guards its role
+      verify/               Public receipt verification
+      signin-error/
     auth/login|callback|logout/   OIDC route handlers
     api/v1/[...path]/       BFF proxy to the FastAPI service
     .well-known/receipt-keys.json/   Public receipt-signing keys (proxied)
@@ -42,47 +45,49 @@ src/
       api.ts                RTK Query endpoints (api.injectEndpoints)
       components/           The feature's React components
       hooks/  lib/          Feature-only hooks and helpers
-      *Slice.ts             Redux slice, if the feature has UI state
       index.ts              The feature's public exports; import from here
-  components/ui/            Shared UI (Button, Card, Dialog, Field, StatTile, SegmentedControl, Avatar, Icon…)
-  components/layout/        App shell: role-based sidebar, top bar, mobile menu (navigation.ts holds the nav per role)
-  store/                    Store setup, base API, typed hooks, provider
-  lib/                      Pure helpers (money, dates, errors, idempotency keys)
-  types/api.ts              API contract (mirrors services/api/app/schemas.py)
-scripts/smoke-login.mjs     End-to-end sign-in test
+  mocks/                    Mock API for endpoints the backend doesn't have yet
+  components/ui/            Shared UI (Button, Card, Dialog, Field, StatTile, Icon…)
+  components/layout/        App shell; navigation.ts holds each role's navigation and home
+  store/                    Store setup, base API (real or mock), typed hooks, provider
+  lib/                      Pure helpers (money in NGN, dates, errors, idempotency keys)
+  types/api.ts              Contract for existing API endpoints (mirrors services/api/app/schemas.py)
+  types/domain.ts           Mandate Gate domain: mandates, runs, carts, gate decisions, purchases, sellers, ops
+scripts/smoke-login.mjs     End-to-end sign-in test for every role (non-destructive)
 ```
 
 ### Features
 
 | Feature | What it does |
 |---|---|
-| `session` | Current user, Sign in / Create account / Sign out, `RequireSignIn` page guard |
-| `wallet` | Member dashboard (balance, money in/out, cash-flow chart, needs-attention list, quick pay) and the Activity page |
-| `transfers` | Send money, step-up, payment detail and timeline, send-back warning, sandbox rail tools |
-| `receipts` | Signed QR receipt, share, download image |
-| `verify` | Check a receipt by link, upload or camera; verdict, warnings and checks; sandbox scenarios |
-| `refunds` | Refund linked to the original payment |
-| `disputes` | Report a problem |
-| `risk` | Analyst console: KPIs, filterable case queue with risk meters, case detail with evidence, AI summary and decisions |
-| `ledger` | Platform finance: trial balance, accounts, journal, a payment's postings |
-| `marketing` | Landing page: hero, how it works, fraud protection, audiences, security, sandbox invite, FAQ |
+| `session` | Current user, sign in / out, `RequireSignIn` guard, role home redirect |
+| `mandates` | Draft (Qwen), sign, list and cancel mandates |
+| `runs` | AI shopping runs: start, follow live, approve or decline the cart |
+| `purchases` | Purchases and signed receipts; public receipt verification |
+| `sellers` | Seller directory, the seller's own catalog, orders and accounts; admin tiers |
+| `support` | Blocked carts and disputes |
+| `agentops` | Ops overview, run traces, agent versions, evaluations, test-marketplace reports |
+| `ledger` | Platform ledger: trial balance, accounts, journal |
+| `banking` | Banks, account-number input and name enquiry (for sellers' bank accounts) |
+| `receipts` | QR code rendering |
+| `marketing` | Landing page (rewritten in M2) |
 | `notifications` | Toasts |
+| `previews` | M1 placeholders' live data reads; removed as M2 and M3 build the real screens |
 
-### Dashboards by role
+### Mock API
 
-| Role | Home | What's on it |
-|---|---|---|
-| Member / business | `/wallet` | Balance, money in and out for the chosen period, daily cash-flow chart, payments to confirm or review, recent activity, quick pay |
-| Risk analyst | `/risk` | Open cases, value on hold, suspicious receipts, resolved count; case queue with type, amount, risk and age |
-| Platform finance | `/ledger` | Trial balance, liabilities and suspense, every account's balance, the journal |
+`src/store/api.ts` sends each request to `src/mocks/handlers.ts` first when `NEXT_PUBLIC_API_MOCKS` isn't `false`. If a mock route matches, the mock answers (with a short delay). Otherwise the request goes to the real API through the BFF.
 
-The cash-flow chart's colours (`--chart-in`, `--chart-out` in `globals.css`) were checked with a colour-vision-deficiency validator against both themes' surfaces. Money in and money out are also separated by position (above and below the baseline), so the chart doesn't rely on colour alone.
+- `mocks/data.ts`: sandbox sellers (some dishonest), catalogs, mandates, runs, purchases, agent versions, evaluations and test-marketplace reports.
+- `mocks/gate.ts`: a TypeScript mirror of the gate rules, so mocked carts get realistic allow or deny decisions. It's UI data only, never a security control; the real gate is server-side (M7).
+- `mocks/compile.ts` stands in for Qwen's sentence-to-mandate drafting. `mocks/simulate.ts` stands in for the agent runtime: new runs reveal their steps over a few seconds.
+
+When a backend endpoint ships, delete its route from `handlers.ts`.
 
 ### State management
 
-- **Server data** is handled by RTK Query. Each feature adds its endpoints to the shared `api`. Cache tags (`Wallet`, `Transfer`, `Case`, `Ledger`…) refresh affected views after a mutation.
-- **UI state** lives in slices: `notifications` (toasts) and `verify` (last receipt submitted, input tab).
-- The verify page shares one scan result across components with RTK Query's `fixedCacheKey`.
+- **Server data** is handled by RTK Query. Each feature adds its endpoints to the shared `api`. Cache tags (`Mandate`, `Run`, `Purchase`, `Seller`, `Support`, `Ops`, `Ledger`…) refresh affected views after a mutation.
+- **UI state** lives in slices: `notifications` (toasts).
 
 ## Scripts
 

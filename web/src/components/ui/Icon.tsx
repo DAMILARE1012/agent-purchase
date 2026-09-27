@@ -33,6 +33,22 @@ const PATHS = {
   alert: "M12 4 2.5 20h19zM12 10v4M12 17h.01",
   clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",
   refresh: "M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5",
+  // Mandate Gate
+  cart: "M3 4h2l2.4 10.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H6.2M9 20h.01M17 20h.01",
+  mandate: "M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5M10 8h1",
+  bot: "M8 8V5h8v3M5 8h14v11H5zM9 13h.01M15 13h.01M10 16h4M12 2v3",
+  receipt: "M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21zM9 8h6M9 12h6M9 16h3",
+  store: "M4 10v10h16V10M3 10l1.5-6h15L21 10a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0M10 20v-5h4v5",
+  box: "M4 7l8-4 8 4v10l-8 4-8-4zM4 7l8 4 8-4M12 11v10",
+  bank: "M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18M12 3l9 5H3z",
+  wallet: "M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4zM4 7V6a2 2 0 0 1 2-2h10M16 13.5h.01",
+  flask: "M9 3h6M10 3v6L4.5 19a1.3 1.3 0 0 0 1.2 2h12.6a1.3 1.3 0 0 0 1.2-2L14 9V3M7 15h10",
+  target: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",
+  trace: "M4 6h6M4 12h10M4 18h7M17 6h3M19 12h1M14 18h6",
+  layers: "M12 3l9 5-9 5-9-5zM3 13l9 5 9-5M3 17.5l9 5 9-5",
+  gauge: "M4 18a8 8 0 1 1 16 0M12 18l4-6M8 18h.01M16 18h.01",
+  users: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7M18 14a6 6 0 0 1 4 7",
+  flag: "M5 21V4M5 4h11l-2 4 2 4H5",
 } as const;
 
 export type IconName = keyof typeof PATHS;

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { buttonClasses } from "@/components/ui";
+import { homeFor } from "@/components/layout/navigation";
 import { useViewer } from "@/features/session";
 import { SIGN_IN_HREF, SIGN_UP_HREF } from "../lib/links";
 
@@ -13,15 +14,8 @@ const LINKS = [
   { href: "#faq", label: "FAQ" },
 ];
 
-function appHome(role: string | undefined, hasWallet: boolean): string {
-  if (hasWallet) return "/wallet";
-  if (role === "analyst") return "/risk";
-  if (role === "ops") return "/ledger";
-  return "/r";
-}
-
 export function MarketingHeader() {
-  const { user, isSignedIn, hasWallet, isLoading } = useViewer();
+  const { user, isSignedIn, isLoading } = useViewer();
 
   return (
     <header className="sticky top-0 z-40 border-b border-line/70 bg-canvas/85 backdrop-blur">
@@ -41,7 +35,7 @@ export function MarketingHeader() {
           {isLoading ? (
             <div className="h-8 w-40 animate-pulse rounded-md bg-surface-2" />
           ) : isSignedIn ? (
-            <Link href={appHome(user?.role, hasWallet)} className={buttonClasses("primary", "sm", "whitespace-nowrap")}>
+            <Link href={homeFor(user?.role)} className={buttonClasses("primary", "sm", "whitespace-nowrap")}>
               Open the app
             </Link>
           ) : (

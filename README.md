@@ -1,6 +1,10 @@
-# Scan-to-Confirm
+# Mandate Gate
 
-People pay anyone by **bank and account number**, whether the recipient is on the platform or at another bank, and share a **signed QR receipt** instead of a screenshot. Anyone who scans it sees the payment's **live status** from the platform's ledger, and forged, edited, recycled or reversed receipts are caught. The design is in [`system_design.md`](system_design.md).
+Lets an AI assistant buy things for you with your bank account, without being able to spend your money in ways you didn't agree to.
+
+You sign a **mandate**: exact limits such as the item, maximum total, allowed sellers and a delivery deadline. A Qwen-based shopping agent finds and proposes a cart, and a rule-based **gate** outside the AI decides whether money can move. The gate checks the cart against your mandate, and checks with the bank that the account being paid really belongs to the seller. Payments are bank transfers, which can't be undone, so the check happens before the money leaves. The design and milestones are in [`system_design.md`](system_design.md).
+
+> **Status: M1 (reset and UI foundation).** The app has a workspace for each role, running on mock data. The AI shopper, mandates, gate and test marketplace are built in later milestones. The previous product (Scan-to-Confirm, a wallet with signed QR receipts) is in git history, and its designs are in `docs/archive/`.
 
 ## Run it
 
@@ -11,9 +15,39 @@ cp .env.example .env      # first time only; a ready-to-use .env is already incl
 docker compose up --build
 ```
 
-### Configuration
+When all six services are healthy (with the default `.env`):
 
-Every setting lives in **`.env`** at the repository root: ports and public URLs, database credentials, Keycloak admin login, realm and client settings, the demo password, sandbox options and the receipt salt. Docker Compose reads it automatically and passes each value to the service that needs it:
+| What | URL |
+|---|---|
+| **Web app** | http://localhost:3000 |
+| API docs (Swagger) | http://localhost:8000/docs |
+| Keycloak admin console | http://localhost:8080/admin (admin / admin) |
+| Sandbox payment network (Swagger) | http://localhost:8100/docs |
+
+Use `localhost`, not `127.0.0.1`. The sign-in redirect and CSRF checks are set up for `http://localhost:3000`.
+
+**Upgrading an existing install** (one that was running before M1): update Keycloak's roles in place. Users and data are kept.
+
+```bash
+node infra/keycloak/migrate-roles-v5.mjs
+```
+
+### Demo accounts
+
+All passwords are `demo1234`. New sign-ups are shoppers.
+
+| Username | Role | Workspace |
+|---|---|---|
+| `sam` | Shopper | Mandates, AI shopping, purchases, balance |
+| `ada` | Seller (Ada's Provisions) | Orders, catalog, bank accounts |
+| `morgan` | Support analyst | Blocked carts, disputes, sellers |
+| `olivia` | Ops / LLM engineer | Overview, agent versions, run traces, evaluations, test marketplace, platform ledger |
+| `kemi` | Admin | Seller directory, users |
+| `rita`, `jordan` | Shopper | Other shoppers in the sandbox |
+
+## Configuration
+
+Every setting lives in **`.env`** at the repository root. Docker Compose reads it and passes each value to the service that needs it:
 
 | Where it goes | How |
 |---|---|
@@ -23,59 +57,11 @@ Every setting lives in **`.env`** at the repository root: ports and public URLs,
 
 `.env.example` documents every variable and marks the ones to change outside local development. `.env` itself is git-ignored.
 
-Changes to most values apply with `docker compose up -d --build`. Two exceptions only apply to fresh data:
-- **Keycloak realm settings** are imported once. After changing them, run `docker compose down -v` (this wipes all data).
-- **Database users and passwords** are also created only on the first start.
+**Mock API.** With `NEXT_PUBLIC_API_MOCKS=true` (the default), endpoints the backend doesn't have yet are served in the browser from [`web/src/mocks`](web/src/mocks):
+- mandates, AI shopping runs, carts, gate decisions, purchases and receipts;
+- sellers, support queues, agent versions, evaluations and test-marketplace reports.
 
-The first start takes a few minutes, mostly Keycloak importing its realm. When all six services are healthy (with the default `.env`):
-
-| What | URL |
-|---|---|
-| **Web app** (landing page) | http://localhost:3000 |
-| API docs (Swagger) | http://localhost:8000/docs |
-| Keycloak admin console | http://localhost:8080/admin (admin / admin) |
-| Sandbox payment network (Swagger) | http://localhost:8100/docs |
-
-Use `localhost`, not `127.0.0.1`. The sign-in redirect and CSRF checks are set up for `http://localhost:3000`.
-
-### Demo accounts
-
-All passwords are `demo1234`. You can also click **Create account** to register a new user, who starts with a $500.00 sandbox balance.
-
-| Username | Role | What to look at |
-|---|---|---|
-| `sam` | Member | Payer: send money, share receipts. Send $1,000 or more to see the step-up check (code `123456`) |
-| `rita` | Member | Payee: verify receipts, confirm "I received it", refund Jordan's "overpayment" |
-| `ada` | Member + business | Payee for the edited-receipt scenario |
-| `jordan` | Member (flagged) | A new, risky account: large payments are held for review |
-| `morgan` | Risk analyst | **Risk console**: held payments, suspicious receipts, disputes, AI case summary |
-| `olivia` | Platform finance (ops) | **Platform ledger**: trial balance, every account, the full journal |
-
-To see payer and payee at the same time, sign in as Sam in one browser and Rita in a private window (or another browser).
-
-### Things to try
-
-1. As **Sam**, open **Send money**, choose **Scan-to-Confirm**, enter Rita's account number `2000000022`: her name appears before you send. Send $20, then copy the receipt link or download the receipt image.
-2. As **Rita**, open that link (or upload the image on **Verify a receipt**). You'll see VERIFIED, the live status, and what was checked. Click **I received it**; opening the link again now says it was already confirmed.
-3. On **Verify a receipt**, use **Try a scenario** to run forged, edited, recycled, reversed and pending receipts. Each one signs you in as the right person.
-4. As **Rita**, refund part of Jordan's $500 "overpayment", then use **Simulate reversal** on that payment. Only the part Rita still holds is taken back.
-5. As **Olivia**, open **Platform ledger** to see every posting. Payments, holds, refunds and reversals are all balanced journal entries.
-6. **Pay another bank.** As Sam, choose **Aurora Bank** and pick Maya Chen from the test accounts panel. Send $20.00 (instant), $5.13 (times out, then succeeds after 30 s), $5.14 (times out, then fails and the money comes back) or $5.66 (succeeds, then Aurora Bank reverses it after 60 s). The payment page updates itself as the network answers.
-7. **Receive from another bank.** On the Overview, click **Receive from another bank** to have a test account holder send you money through the network.
-
-### Inter-bank payments
-
-The `switch` service is a sandbox payment network with four fictional banks (Aurora Bank, Harbor Trust Bank, Meridian Bank, Northwind Savings) and test account holders at each. It does what a national instant-payment switch does for real banks: name enquiry, transfers with a session ID, status queries, delayed outcomes and reversals pushed to the platform by HMAC-signed webhook, and a daily settlement report (`GET /v1/settlement?date=YYYY-MM-DD`).
-
-| On the ledger | Debit | Credit |
-|---|---|---|
-| Send to another bank | Payer | Suspense |
-| Network confirms | Suspense | Inter-bank network settlement |
-| Network fails it | Suspense | Payer (money back) |
-| Other bank reverses it | Network settlement | Payer (money back) |
-| Money arrives from another bank | Network settlement | Payee |
-
-A timeout never fails a payment: it stays **pending** until a webhook arrives, or until the API's background job asks the network (status query) and settles it either way. Receipts for inter-bank payments say what the platform can actually vouch for: that the payment network confirmed delivery to the recipient's bank.
+Real endpoints (session, banks, name enquiry, ledger) always go to the API. As each backend milestone ships, its mock routes are deleted and the screens use the real API with no other changes. Mock state resets when the page reloads.
 
 ## Architecture
 
@@ -87,19 +73,19 @@ flowchart LR
   W -->|sessions| R[(redis)]
   W -->|Bearer access token| A[api: FastAPI]
   A -->|JWKS| K
-  A <-->|transfers, name enquiry /<br/>signed webhooks| S[switch: payment network]
+  A <-->|transfers, name enquiry /<br/>signed webhooks| S[switch: sandbox banks]
   A --> P[(postgres)]
   K --> P
 ```
 
 | Service | Role |
 |---|---|
-| `web` | Next.js 16 UI (Redux Toolkit, Tailwind). Its server is the **backend-for-frontend**: it runs the Keycloak sign-in, keeps tokens in Redis, and proxies `/api/v1/*` to the API with the user's access token. The browser only ever holds an opaque httpOnly cookie. |
-| `api` | FastAPI + SQLAlchemy. Verifies every Keycloak access token (signature via JWKS, issuer, audience, expiry). Owns the double-entry ledger, transfers, signed receipts (Ed25519), verification, risk rules, cases and ledger reports. Alembic migrations run on start. |
-| `switch` | Sandbox inter-bank payment network (FastAPI + SQLite): banks, name enquiry, transfers, status queries, signed webhooks, settlement report. |
-| `keycloak` | Identity provider (OIDC). Realm, clients, roles and demo users are imported from `infra/keycloak/`. Self-registration is on. |
-| `postgres` | App database (`scan`) and Keycloak's database (`keycloak`). Ledger tables are append-only at the database level (trigger). |
-| `redis` | Web sessions and short-lived sign-in state. |
+| `web` | Next.js 16 (Redux Toolkit / RTK Query, Tailwind), organised by feature. Its server is the **backend-for-frontend**: it runs the Keycloak sign-in, keeps tokens in Redis, and proxies `/api/v1/*` to the API with the user's access token. The browser only holds an opaque httpOnly cookie. |
+| `api` | FastAPI + SQLAlchemy. Verifies every Keycloak access token. Owns the double-entry ledger, transfers, Ed25519 signing and ledger reports. Alembic migrations run on start. |
+| `switch` | Sandbox inter-bank payment network with four fictional banks: name enquiry, transfers, status queries, signed webhooks, settlement report. |
+| `keycloak` | Identity provider (OIDC). Roles: shopper, seller, analyst, ops, admin. |
+| `postgres` | App database and Keycloak's database. Ledger tables are append-only at the database level. |
+| `redis` | Web sessions and short-lived sign-in state. Later: the run queue and shared model rate limits. |
 
 ## Tests
 
@@ -107,35 +93,33 @@ flowchart LR
 # API unit tests (no database needed)
 docker compose run --rm --no-deps --entrypoint "python -m pytest -q" api
 
+# Web: types and lint
+cd web && npx tsc --noEmit && npx eslint src
+
 # End-to-end, with the stack running
-node services/api/tests/smoke_interbank.mjs  # Inter-bank: name enquiry, all network outcomes, inbound, webhooks (~90 s)
-node services/api/tests/smoke_api.mjs        # API: auth, scenarios, payments, refunds, roles, ledger
-node web/scripts/smoke-login.mjs             # Browser sign-in via Keycloak, BFF proxy, CSRF, sign-out
+node web/scripts/smoke-login.mjs             # Sign-in for every role, role pages, BFF proxy, CSRF, sign-out (non-destructive)
+node services/api/tests/smoke_interbank.mjs  # Inter-bank payments through the sandbox switch (~90 s, non-destructive)
 ```
 
-`smoke_interbank.mjs` creates its own throwaway users and leaves existing data alone. The other two **reset the demo data** (as Olivia) when they finish, which removes any payments you've made.
-
-## Reset
-
-- Demo data only: sign in as **olivia**, open **Verify a receipt**, click **Reset demo data**. Keycloak users are kept.
-- Everything, including Keycloak and database volumes: `docker compose down -v`
+`services/api/tests/smoke_api.mjs` tests the previous product's wallet API and **resets the demo data** when it finishes.
 
 ## Repository layout
 
 ```text
 docker-compose.yml       The whole stack (all settings come from .env)
 .env.example             Every configuration variable, documented
-infra/keycloak/          Realm import: clients, roles, demo users
+infra/keycloak/          Realm import and the M1 role migration
 infra/postgres/init/     Creates Keycloak's database
-services/api/            FastAPI service (see app/services for the domain logic)
+services/api/            FastAPI service
 services/switch/         Sandbox inter-bank payment network
-web/                     Next.js app (see web/README.md)
-system_design.md         System design and milestones
+web/                     Next.js app: src/features/* per feature, src/mocks for the mock API
+system_design.md         Design and milestones
+docs/archive/            Earlier designs
 ```
 
-## Not production-ready yet
+## Not production-ready
 
-- The receipt signing key's private half is stored in Postgres. Production uses a KMS (§13).
+- No real money: payments run on sandbox banks. A launch needs a licensed payment partner.
+- The receipt signing key's private half is stored in Postgres; production uses a KMS.
 - The `scan-cli` Keycloak client allows password login for tests only. Disable it in production.
-- The AI services (receipt vision, risk model, copilot) are rule- and template-based stand-ins until milestones M5–M7. The UI says so where it matters.
 - The values in `.env.example` are development defaults. Replace everything marked CHANGE before deploying anywhere shared.

@@ -21,7 +21,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(100), unique=True)
     display_name: Mapped[str] = mapped_column(String(120))
     email: Mapped[str | None] = mapped_column(String(200))
-    role: Mapped[str] = mapped_column(String(20))  # member | merchant | analyst | ops
+    role: Mapped[str] = mapped_column(String(20))  # shopper | seller | analyst | ops | admin
     flagged: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = _now_col()
 

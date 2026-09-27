@@ -6,25 +6,18 @@ import { Avatar, Badge, Button, Icon } from "@/components/ui";
 import { signIn, useViewer } from "@/features/session";
 import { cn } from "@/lib/cn";
 import { DEMO_MODE } from "@/lib/demo";
-import { isActive, navFor } from "./navigation";
-
-const ROLE_LABEL: Record<string, string> = {
-  member: "Personal",
-  merchant: "Business",
-  analyst: "Risk analyst",
-  ops: "Platform finance",
-};
+import { isActive, navFor, ROLE_LABEL } from "./navigation";
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { user, isSignedIn, hasWallet, isLoading } = useViewer();
-  const sections = navFor(user?.role, hasWallet);
+  const { user, isSignedIn, isLoading } = useViewer();
+  const sections = navFor(user?.role);
 
   return (
     <div className="flex h-full flex-col">
       <Link href="/" onClick={onNavigate} className="flex h-16 items-center gap-2 border-b border-line px-5 font-display text-lg font-bold">
-        <span aria-hidden="true" className="grid size-8 place-items-center rounded-lg bg-ink text-sm text-canvas">✓</span>
-        Scan-to-Confirm
+        <span aria-hidden="true" className="grid size-8 place-items-center rounded-lg bg-ink text-canvas"><Icon name="shield" className="size-[18px]" /></span>
+        Mandate Gate
       </Link>
 
       <nav aria-label="Main" className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-5">
@@ -57,7 +50,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="flex flex-col gap-3 border-t border-line p-4">
         {DEMO_MODE && (
           <p className="rounded-lg bg-ai-bg px-3 py-2 text-xs text-ink-2">
-            <span className="font-semibold text-ai">Sandbox.</span> Balances are test money.
+            <span className="font-semibold text-ai">Sandbox.</span> Test money, test sellers.
           </p>
         )}
         {isLoading ? (
@@ -78,11 +71,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         ) : (
           <div className="flex flex-col gap-2">
             <Button size="sm" onClick={() => signIn()}>Sign in</Button>
-            <Button size="sm" variant="secondary" onClick={() => signIn({ register: true, returnTo: "/wallet" })}>Create account</Button>
+            <Button size="sm" variant="secondary" onClick={() => signIn({ register: true, returnTo: "/home" })}>Create account</Button>
           </div>
         )}
-        {isSignedIn && user && ROLE_LABEL[user.role] && (
-          <Badge tone={user.role === "analyst" || user.role === "ops" ? "crypto" : "neutral"} className="self-start">
+        {isSignedIn && user && user.role !== "guest" && (
+          <Badge tone={user.role === "shopper" || user.role === "seller" ? "neutral" : "crypto"} className="self-start">
             {ROLE_LABEL[user.role]}
           </Badge>
         )}

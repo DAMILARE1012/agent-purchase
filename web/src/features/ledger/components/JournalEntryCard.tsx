@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatDateTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
+import { LEDGER_CURRENCY } from "../lib/currency";
 import type { JournalEntry } from "@/types/api";
 
 /** One posting, shown the way an accountant writes it: debits first, credits indented. */
@@ -28,8 +29,8 @@ export function JournalEntryCard({ entry }: { entry: JournalEntry }) {
                 <span className="text-muted">{line.direction}</span> {line.accountName}
                 <span className="ml-2 text-[11px] text-muted">{line.accountId}</span>
               </td>
-              <td className="w-28 py-1 text-right">{line.direction === "DR" ? formatMoney(line.amountMinor) : ""}</td>
-              <td className="w-28 py-1 text-right">{line.direction === "CR" ? formatMoney(line.amountMinor) : ""}</td>
+              <td className="w-28 py-1 text-right">{line.direction === "DR" ? formatMoney(line.amountMinor, LEDGER_CURRENCY) : ""}</td>
+              <td className="w-28 py-1 text-right">{line.direction === "CR" ? formatMoney(line.amountMinor, LEDGER_CURRENCY) : ""}</td>
             </tr>
           ))}
         </tbody>

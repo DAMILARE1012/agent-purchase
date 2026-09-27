@@ -72,6 +72,6 @@ export async function takeLoginState(state: string): Promise<LoginState | null> 
 
 /** Only same-site relative paths, so the login flow can't be used as an open redirect. */
 export function safeReturnTo(value: string | null | undefined): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) return "/wallet";
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) return "/home";
   return value;
 }

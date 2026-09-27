@@ -1,4 +1,4 @@
-import { TransferStatusBadge } from "@/features/transfers";
+import { TransferStatusBadge } from "./TransferStatusBadge";
 import type { LedgerSummary, TransferStatus } from "@/types/api";
 
 const ORDER: TransferStatus[] = ["settled", "pending", "held", "initiated", "reversed", "failed"];

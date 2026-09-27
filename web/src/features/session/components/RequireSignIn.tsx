@@ -8,7 +8,7 @@ import { SignInPrompt } from "./SignInPrompt";
 
 interface RequireSignInProps {
   children: ReactNode;
-  /** Also require a wallet (members and businesses, not staff). */
+  /** Also require a funding balance (shoppers and sellers, not staff). */
   wallet?: boolean;
   /** Require one of these roles, e.g. ["analyst"]. */
   roles?: string[];

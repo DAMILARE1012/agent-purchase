@@ -1,15 +1,10 @@
 "use client";
 
+import { ROLE_LABEL } from "@/components/layout/navigation";
 import { Badge, Button } from "@/components/ui";
 import { useViewer } from "../hooks/useViewer";
 import { signIn } from "../lib/authLinks";
 import { SignOutButton } from "./SignOutButton";
-
-const ROLE_LABEL: Record<string, string> = {
-  merchant: "Business",
-  analyst: "Risk analyst",
-  ops: "Platform finance",
-};
 
 /** Header account area: sign in / create account, or who you are and sign out. */
 export function AccountMenu() {
@@ -20,7 +15,7 @@ export function AccountMenu() {
   if (!isSignedIn || !user) {
     return (
       <div className="flex items-center gap-2">
-        <Button size="sm" variant="ghost" onClick={() => signIn({ register: true, returnTo: "/wallet" })}>
+        <Button size="sm" variant="ghost" onClick={() => signIn({ register: true, returnTo: "/home" })}>
           Create account
         </Button>
         <Button size="sm" onClick={() => signIn()}>Sign in</Button>
@@ -34,7 +29,7 @@ export function AccountMenu() {
         <span className="text-sm font-semibold">{user.displayName}</span>
         <span className="text-xs text-muted">{user.handle}</span>
       </div>
-      {ROLE_LABEL[user.role] && <Badge tone="crypto">{ROLE_LABEL[user.role]}</Badge>}
+      {user.role !== "guest" && <Badge tone="crypto">{ROLE_LABEL[user.role]}</Badge>}
       <SignOutButton />
     </div>
   );

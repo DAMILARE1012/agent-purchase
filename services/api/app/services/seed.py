@@ -27,12 +27,13 @@ class DemoUser:
 
 
 DEMO_USERS = [
-    DemoUser("0b4a8f0e-5c1a-4c1e-9a53-1d1f00000001", "sam", "Sam Carter", "member", 500_000),
-    DemoUser("0b4a8f0e-5c1a-4c1e-9a53-1d1f00000002", "rita", "Rita Alvarez", "member", 40_000),
-    DemoUser("0b4a8f0e-5c1a-4c1e-9a53-1d1f00000003", "ada", "Ada's Bakery", "merchant", 200_000),
-    DemoUser("0b4a8f0e-5c1a-4c1e-9a53-1d1f00000004", "jordan", "Jordan Price", "member", 500_000, flagged=True, age_days=2),
+    DemoUser("0b4a8f0e-5c1a-4c1e-9a53-1d1f00000001", "sam", "Sam Carter", "shopper", 500_000),
+    DemoUser("0b4a8f0e-5c1a-4c1e-9a53-1d1f00000002", "rita", "Rita Alvarez", "shopper", 40_000),
+    DemoUser("0b4a8f0e-5c1a-4c1e-9a53-1d1f00000003", "ada", "Ada's Provisions", "seller", 200_000),
+    DemoUser("0b4a8f0e-5c1a-4c1e-9a53-1d1f00000004", "jordan", "Jordan Price", "shopper", 500_000, flagged=True, age_days=2),
     DemoUser("0b4a8f0e-5c1a-4c1e-9a53-1d1f00000005", "morgan", "Morgan Lee", "analyst"),
     DemoUser("0b4a8f0e-5c1a-4c1e-9a53-1d1f00000006", "olivia", "Olivia Grant", "ops"),
+    DemoUser("0b4a8f0e-5c1a-4c1e-9a53-1d1f00000007", "kemi", "Kemi Adeyemi", "admin"),
 ]
 
 LOW = (0.04, "low", [])
@@ -78,7 +79,7 @@ def seed(db: Session) -> None:
         db.add(User(id=u.id, username=u.username, display_name=u.display_name, email=f"{u.username}@example.com",
                     role=u.role, flagged=u.flagged, created_at=now() - timedelta(days=u.age_days)))
         db.flush()
-        if u.role in ("member", "merchant"):
+        if u.role in ("shopper", "seller"):
             db.add(Account(
                 id=f"acct_{u.username}", user_id=u.id, account_number=make_account_number(f"2000000{i:02d}"),
                 kind="user", name=u.display_name, currency="USD",

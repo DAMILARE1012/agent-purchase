@@ -11,7 +11,7 @@ class Schema(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, from_attributes=True)
 
 
-Role = Literal["member", "merchant", "analyst", "ops", "guest"]
+Role = Literal["shopper", "seller", "analyst", "ops", "admin", "guest"]
 TransferStatus = Literal["initiated", "pending", "settled", "held", "failed", "reversed"]
 Verdict = Literal["VERIFIED", "PENDING", "SUSPICIOUS"]
 ScanSource = Literal["link", "upload", "webcam", "paste"]

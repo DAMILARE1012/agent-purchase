@@ -17,10 +17,11 @@ def test_money_formats_minor_units():
 
 
 def test_primary_role_prefers_most_privileged():
-    assert primary_role(frozenset({"member", "ops"})) == "ops"
-    assert primary_role(frozenset({"member", "analyst"})) == "analyst"
-    assert primary_role(frozenset({"member", "merchant"})) == "merchant"
-    assert primary_role(frozenset({"offline_access"})) == "member"
+    assert primary_role(frozenset({"shopper", "ops"})) == "ops"
+    assert primary_role(frozenset({"shopper", "analyst"})) == "analyst"
+    assert primary_role(frozenset({"shopper", "seller"})) == "seller"
+    assert primary_role(frozenset({"shopper", "admin", "ops"})) == "admin"
+    assert primary_role(frozenset({"offline_access"})) == "shopper"
 
 
 def test_ledger_rejects_unbalanced_entries_before_writing():

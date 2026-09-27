@@ -1,6 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { notificationsReducer } from "@/features/notifications/notificationsSlice";
-import { verifyReducer } from "@/features/verify/verifySlice";
 import { api } from "./api";
 
 export function makeStore() {
@@ -8,7 +7,6 @@ export function makeStore() {
     reducer: {
       [api.reducerPath]: api.reducer,
       notifications: notificationsReducer,
-      verify: verifyReducer,
     },
     middleware: (getDefault) => getDefault().concat(api.middleware),
   });

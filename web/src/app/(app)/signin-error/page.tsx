@@ -19,8 +19,8 @@ export default async function SignInErrorPage({ searchParams }: PageProps<"/sign
       </Alert>
       <div className="flex gap-2">
         {/* A plain link: /auth/login is a route handler, not a page. */}
-        <a href="/auth/login?returnTo=/wallet" className={buttonClasses()}>Try again</a>
-        <ButtonLink href="/r" variant="secondary">Verify a receipt instead</ButtonLink>
+        <a href="/auth/login?returnTo=/home" className={buttonClasses()}>Try again</a>
+        <ButtonLink href="/verify" variant="secondary">Verify a receipt instead</ButtonLink>
       </div>
     </div>
   );

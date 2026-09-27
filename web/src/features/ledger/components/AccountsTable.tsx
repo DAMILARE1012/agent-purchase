@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/money";
+import { LEDGER_CURRENCY } from "../lib/currency";
 import type { LedgerAccount } from "@/types/api";
 
 interface AccountsTableProps {
@@ -38,10 +39,10 @@ export function AccountsTable({ accounts, selected, onSelect }: AccountsTablePro
               <td className="px-4 py-2.5">
                 {a.kind === "system" ? <Badge tone="crypto">System</Badge> : <span className="text-ink-2">{a.ownerHandle}</span>}
               </td>
-              <td className="px-4 py-2.5 text-right font-mono tabular-nums text-ink-2">{formatMoney(a.debitsMinor)}</td>
-              <td className="px-4 py-2.5 text-right font-mono tabular-nums text-ink-2">{formatMoney(a.creditsMinor)}</td>
+              <td className="px-4 py-2.5 text-right font-mono tabular-nums text-ink-2">{formatMoney(a.debitsMinor, LEDGER_CURRENCY)}</td>
+              <td className="px-4 py-2.5 text-right font-mono tabular-nums text-ink-2">{formatMoney(a.creditsMinor, LEDGER_CURRENCY)}</td>
               <td className={cn("px-4 py-2.5 text-right font-mono font-semibold tabular-nums", a.balanceMinor < 0 && "text-bad")}>
-                {formatMoney(a.balanceMinor)}
+                {formatMoney(a.balanceMinor, LEDGER_CURRENCY)}
               </td>
             </tr>
           ))}

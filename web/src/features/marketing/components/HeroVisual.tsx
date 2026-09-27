@@ -14,7 +14,7 @@ const CHECKS = ["Signed by the platform", "Money has arrived", "Paid to you", "N
  */
 export function HeroVisual() {
   // The sample QR opens this site's verify page; the origin is only known in the browser.
-  const verifyUrl = useSyncExternalStore(noSubscribe, () => `${window.location.origin}/r`, () => "/r");
+  const verifyUrl = useSyncExternalStore(noSubscribe, () => `${window.location.origin}/verify`, () => "/verify");
 
   return (
     <div className="relative mx-auto h-[520px] w-full max-w-[480px]" aria-label="An edited payment screenshot next to a verified receipt" role="img">

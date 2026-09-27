@@ -171,12 +171,12 @@ It never approves, chooses the account to pay, or moves money.
 We build the **UI first**, on realistic mock data, so every screen can be seen and agreed before the backend exists. The mock data sits behind the same RTK Query endpoints the real API will use, so switching to the real API needs no screen changes.
 
 ### M1 · Reset and UI foundation
-- [ ] Put the project under git and commit the current state
-- [ ] Remove the retired wallet features (send money, QR receipt sharing, person-to-person refunds and disputes) from the UI
-- [ ] Switch currency to NGN
-- [ ] Keycloak roles: shopper, seller, analyst, ops, admin, with a demo user for each
-- [ ] New navigation and app shell per role
-- [ ] Mock data layer behind RTK Query (mandates, runs, carts, purchases, receipts, sellers, evaluation results)
+- [x] Put the project under git and commit the current state
+- [x] Remove the retired wallet features (send money, QR receipt sharing, person-to-person refunds and disputes) from the UI
+- [x] Switch the UI currency to NGN (the backend ledger switches in M7, when payments are reworked)
+- [x] Keycloak roles: shopper, seller, analyst, ops, admin, with a demo user for each
+- [x] New navigation and app shell per role
+- [x] Mock data layer behind RTK Query (mandates, runs, carts, purchases, receipts, sellers, evaluation results)
 
 **Done when:** the app runs with the new shell and mock data, and the old product is recoverable from git history.
 

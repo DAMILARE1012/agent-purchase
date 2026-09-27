@@ -1,6 +1,6 @@
 {
   "realm": "${KEYCLOAK_REALM}",
-  "displayName": "Scan-to-Confirm",
+  "displayName": "Mandate Gate",
   "enabled": true,
   "sslRequired": "none",
   "registrationAllowed": true,
@@ -16,21 +16,22 @@
   "ssoSessionMaxLifespan": 36000,
   "roles": {
     "realm": [
-      { "name": "member", "description": "Wallet user who can send and receive money" },
-      { "name": "merchant", "description": "Business payee" },
-      { "name": "analyst", "description": "Risk analyst: reviews holds, suspicious receipts and disputes" },
-      { "name": "ops", "description": "Platform finance: views the platform ledger" }
+      { "name": "shopper", "description": "Signs mandates, approves carts and sees their purchases" },
+      { "name": "seller", "description": "Manages a store's catalog, bank accounts, orders and refunds" },
+      { "name": "analyst", "description": "Support analyst: reviews blocked carts, disputes and sellers" },
+      { "name": "ops", "description": "Ops and LLM engineer: agent versions, evaluations, traces and the platform ledger" },
+      { "name": "admin", "description": "Verifies and suspends sellers, manages users" }
     ]
   },
   "defaultRole": {
     "name": "default-roles-${KEYCLOAK_REALM}",
     "composite": true,
-    "composites": { "realm": ["offline_access", "uma_authorization", "member"] }
+    "composites": { "realm": ["offline_access", "uma_authorization", "shopper"] }
   },
   "clients": [
     {
       "clientId": "${OIDC_CLIENT_ID}",
-      "name": "Scan-to-Confirm web app",
+      "name": "Mandate Gate web app",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
@@ -93,7 +94,7 @@
       "lastName": "Carter",
       "enabled": true,
       "credentials": [{ "type": "password", "value": "${DEMO_USER_PASSWORD}", "temporary": false }],
-      "realmRoles": ["default-roles-${KEYCLOAK_REALM}", "member"]
+      "realmRoles": ["default-roles-${KEYCLOAK_REALM}"]
     },
     {
       "id": "0b4a8f0e-5c1a-4c1e-9a53-1d1f00000002",
@@ -104,7 +105,7 @@
       "lastName": "Alvarez",
       "enabled": true,
       "credentials": [{ "type": "password", "value": "${DEMO_USER_PASSWORD}", "temporary": false }],
-      "realmRoles": ["default-roles-${KEYCLOAK_REALM}", "member"]
+      "realmRoles": ["default-roles-${KEYCLOAK_REALM}"]
     },
     {
       "id": "0b4a8f0e-5c1a-4c1e-9a53-1d1f00000003",
@@ -115,7 +116,7 @@
       "lastName": "Okoro",
       "enabled": true,
       "credentials": [{ "type": "password", "value": "${DEMO_USER_PASSWORD}", "temporary": false }],
-      "realmRoles": ["default-roles-${KEYCLOAK_REALM}", "member", "merchant"]
+      "realmRoles": ["default-roles-${KEYCLOAK_REALM}", "seller"]
     },
     {
       "id": "0b4a8f0e-5c1a-4c1e-9a53-1d1f00000004",
@@ -126,7 +127,7 @@
       "lastName": "Price",
       "enabled": true,
       "credentials": [{ "type": "password", "value": "${DEMO_USER_PASSWORD}", "temporary": false }],
-      "realmRoles": ["default-roles-${KEYCLOAK_REALM}", "member"]
+      "realmRoles": ["default-roles-${KEYCLOAK_REALM}"]
     },
     {
       "id": "0b4a8f0e-5c1a-4c1e-9a53-1d1f00000005",
@@ -149,6 +150,17 @@
       "enabled": true,
       "credentials": [{ "type": "password", "value": "${DEMO_USER_PASSWORD}", "temporary": false }],
       "realmRoles": ["default-roles-${KEYCLOAK_REALM}", "ops"]
+    },
+    {
+      "id": "0b4a8f0e-5c1a-4c1e-9a53-1d1f00000007",
+      "username": "kemi",
+      "email": "kemi@example.com",
+      "emailVerified": true,
+      "firstName": "Kemi",
+      "lastName": "Adeyemi",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${DEMO_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["default-roles-${KEYCLOAK_REALM}", "admin"]
     }
   ]
 }

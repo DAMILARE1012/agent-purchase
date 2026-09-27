@@ -134,6 +134,7 @@ services:
       args:
         NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:?NEXT_PUBLIC_DEMO_MODE is not set}
         NEXT_PUBLIC_DEMO_PASSWORD: ${DEMO_USER_PASSWORD}
+        NEXT_PUBLIC_API_MOCKS: ${NEXT_PUBLIC_API_MOCKS:-true}
     environment:
       APP_URL: ${WEB_PUBLIC_URL}
       API_INTERNAL_URL: http://api:8000

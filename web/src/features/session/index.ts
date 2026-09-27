@@ -5,3 +5,4 @@ export { SignOutButton } from "./components/SignOutButton";
 export { useViewer } from "./hooks/useViewer";
 export { signIn } from "./lib/authLinks";
 export { RequireSignIn } from "./components/RequireSignIn";
+export { RoleHomeRedirect } from "./components/RoleHomeRedirect";
