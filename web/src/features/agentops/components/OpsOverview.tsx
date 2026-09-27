@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Badge, Card, ErrorState, Icon, LoadingState, PageHeader, StatTile } from "@/components/ui";
+import { Alert, Badge, Card, ErrorState, Icon, LoadingState, PageHeader, StatTile } from "@/components/ui";
 import { RULE_FAILED, RUN_STATUS } from "@/features/runs";
 import { useGetBlockedCartsQuery } from "@/features/support";
 import { errorMessage } from "@/lib/api-error";
@@ -14,6 +14,7 @@ import { BarList } from "./BarList";
 export function OpsOverview() {
   const { data: o, error, isLoading } = useGetOpsOverviewQuery(undefined, { pollingInterval: 10_000 });
   const { data: runs } = useGetAllRunsQuery();
+  // Latest 100 runs (the list endpoint's default); the counts above cover the last 24 hours.
   const { data: blocked } = useGetBlockedCartsQuery();
   const { data: versions } = useGetAgentVersionsQuery();
 
@@ -30,6 +31,12 @@ export function OpsOverview() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Overview" description="How the AI shopper is doing. The number that must always be zero is money paid outside a mandate." />
+      {o.modelProvider === "sandbox" && (
+        <Alert tone="ai" title="Model provider: sandbox (no Groq API key)">
+          Runs use the scripted stand-in, not a model: it follows a fixed shopping policy and reads catalog photos from their ground truth.
+          Add GROQ_API_KEY to .env and restart the api and worker to use qwen/qwen3.8-27b.
+        </Alert>
+      )}
 
       <Card className="flex flex-wrap items-center gap-4 border-truth bg-truth-bg">
         <span className="grid size-12 place-items-center rounded-full bg-surface text-truth"><Icon name="shield" className="size-6" /></span>
@@ -44,7 +51,7 @@ export function OpsOverview() {
         <StatTile label="Runs in 24 h" value={o.runsToday} detail={o.purchasesToday === 1 ? "1 purchase" : `${o.purchasesToday} purchases`} />
         <StatTile label="Carts refused in 24 h" value={o.blockedToday} detail="By the gate, before payment" />
         <StatTile label="p95 run time" value={`${o.p95RunSeconds.toFixed(0)} s`} detail="Target: under 30 s to a proposed cart" />
-        <StatTile label="Model cost per purchase" value={formatUsd(o.costPerPurchaseMicroUsd)} detail={`Fallback rate ${(o.fallbackRate * 100).toFixed(1)}% · queue ${o.queueDepth}`} />
+        <StatTile label="Model cost per proposed cart" value={formatUsd(o.costPerPurchaseMicroUsd)} detail={`Fallback rate ${(o.fallbackRate * 100).toFixed(1)}% · queue ${o.queueDepth}`} />
       </div>
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
@@ -61,6 +68,7 @@ export function OpsOverview() {
         </Card>
         <Card className="flex flex-col gap-4">
           <h2 className="font-display text-lg font-semibold">Runs by outcome</h2>
+          {!runs && <LoadingState label="Loading runs…" />}
           <BarList
             label="Runs by outcome"
             rows={[...byStatus.entries()].sort((a, b) => b[1] - a[1]).map(([s, n]) => ({ key: s, label: RUN_STATUS[s].label, value: n }))}
@@ -72,7 +80,13 @@ export function OpsOverview() {
         <div className="flex flex-col gap-1">
           <span className="text-sm text-muted">Live agent version</span>
           <span className="font-mono text-lg font-semibold">{o.liveVersion}</span>
-          {live && <span className="text-sm text-ink-2">{live.model} · fallback {live.fallbackModel}</span>}
+          {live && <span className="text-sm text-ink-2">{live.model} · fallback {live.fallbackModel} · provider {o.modelProvider ?? "?"}</span>}
+          {o.rateLimits && (
+            <span className="text-sm text-muted">
+              Shared limits: {o.rateLimits.requestsPerMinute} requests and {o.rateLimits.tokensPerMinute.toLocaleString()} tokens per minute,
+              {" "}{Math.round(o.rateLimits.interactiveReserve * 100)}% kept for shoppers who are watching
+            </span>
+          )}
         </div>
         {candidate && (
           <div className="flex items-center gap-3">

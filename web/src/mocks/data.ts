@@ -5,10 +5,8 @@
 import type {
   AdminUser,
   AgentRun,
-  AgentVersion,
   CatalogItem,
   Dispute,
-  EvalResult,
   Mandate,
   MandateLimits,
   Purchase,
@@ -114,7 +112,7 @@ export const catalog: CatalogItem[] = [
 const limits = (over: Partial<MandateLimits>): MandateLimits => ({
   item: "", brand: null, model: null, category: null, quantity: 1,
   maxTotalMinor: 0, maxPerItemMinor: null, sellerPolicy: "verified_only", sellerIds: [],
-  deliverBy: null, expiresAt: ahead(60 * 24), maxUses: 1, periodCapMinor: null, period: null,
+  deliverBy: null, deliveryCity: "Lagos", expiresAt: ahead(60 * 24), maxUses: 1, periodCapMinor: null, period: null,
   shareDelivery: { name: true, phone: true, address: true },
   ...over,
 });
@@ -417,74 +415,6 @@ export const users: AdminUser[] = [
   { id: "u_kemi", username: "kemi", displayName: "Kemi Adeyemi", role: "admin", status: "active", joinedAt: ago(60 * 24 * 1), lastSeenAt: ago(1) },
 ];
 
-// ---- Ops ----------------------------------------------------------------------------
-
-export const agentVersions: AgentVersion[] = [
-  {
-    id: "shopper-2026.09.2", status: "candidate", model: "qwen/qwen3.8-27b", fallbackModel: "openai/gpt-oss-120b",
-    prompts: [{ task: "intent.compile", version: "v3" }, { task: "agent.step", version: "v6" }, { task: "catalog.read_image", version: "v2" }],
-    params: { temperature: 0, reasoningEffort: "low" }, createdAt: ago(60 * 20),
-    changelog: "agent.step v6: treats seller claims about verification or discounts as untrusted, and checks mandate limits before proposing a cart.",
-  },
-  {
-    id: LIVE_VERSION, status: "live", model: "qwen/qwen3.8-27b", fallbackModel: "openai/gpt-oss-120b",
-    prompts: [{ task: "intent.compile", version: "v3" }, { task: "agent.step", version: "v5" }, { task: "catalog.read_image", version: "v2" }],
-    params: { temperature: 0, reasoningEffort: "low" }, createdAt: ago(60 * 24 * 9),
-    changelog: "catalog.read_image v2: returns pack size and unit separately; marks unreadable prices instead of guessing.",
-  },
-  {
-    id: "shopper-2026.08.4", status: "retired", model: "qwen/qwen3.8-27b", fallbackModel: "openai/gpt-oss-20b",
-    prompts: [{ task: "intent.compile", version: "v2" }, { task: "agent.step", version: "v5" }, { task: "catalog.read_image", version: "v1" }],
-    params: { temperature: 0, reasoningEffort: "none" }, createdAt: ago(60 * 24 * 30),
-    changelog: "First version used with standing mandates.",
-  },
-];
-
-const metric = (name: string, value: number, unit: EvalResult["metrics"][number]["unit"], better: "higher" | "lower", threshold: number | null) => ({
-  name, value, unit, better, threshold,
-  pass: threshold === null ? true : better === "higher" ? value >= threshold : value <= threshold,
-});
-
-export const evalResults: EvalResult[] = [
-  { versionId: LIVE_VERSION, suite: "intent_fidelity", cases: 240, runAt: ago(60 * 24 * 9), metrics: [
-    metric("Drafts broader than the request", 0, "%", "lower", 0),
-    metric("Asked when details were missing", 91.3, "%", "higher", 85),
-    metric("Drafts narrower than the request", 4.2, "%", "lower", null),
-  ] },
-  { versionId: LIVE_VERSION, suite: "shopping_tasks", cases: 180, runAt: ago(60 * 24 * 9), metrics: [
-    metric("Task success", 87.8, "%", "higher", 85),
-    metric("Median steps", 6, "steps", "lower", null),
-    metric("p95 time to proposed cart", 24_800, "ms", "lower", 30_000),
-    metric("Cost per completed purchase", 0.0061, "$", "lower", 0.01),
-  ] },
-  { versionId: LIVE_VERSION, suite: "catalog_reading", cases: 420, runAt: ago(60 * 24 * 9), metrics: [
-    metric("Price read correctly", 97.9, "%", "higher", 97),
-    metric("Pack size read correctly", 94.1, "%", "higher", 92),
-    metric("Marked unreadable", 2.4, "%", "lower", null),
-  ] },
-  { versionId: LIVE_VERSION, suite: "gate_properties", cases: 10_000, runAt: ago(60 * 24 * 9), metrics: [
-    metric("Rule-breaking carts refused", 100, "%", "higher", 100),
-  ] },
-  { versionId: "shopper-2026.09.2", suite: "intent_fidelity", cases: 240, runAt: ago(60 * 19), metrics: [
-    metric("Drafts broader than the request", 0, "%", "lower", 0),
-    metric("Asked when details were missing", 92.5, "%", "higher", 85),
-    metric("Drafts narrower than the request", 4.6, "%", "lower", null),
-  ] },
-  { versionId: "shopper-2026.09.2", suite: "shopping_tasks", cases: 180, runAt: ago(60 * 19), metrics: [
-    metric("Task success", 89.4, "%", "higher", 85),
-    metric("Median steps", 7, "steps", "lower", null),
-    metric("p95 time to proposed cart", 27_100, "ms", "lower", 30_000),
-    metric("Cost per completed purchase", 0.0068, "$", "lower", 0.01),
-  ] },
-  { versionId: "shopper-2026.09.2", suite: "catalog_reading", cases: 420, runAt: ago(60 * 19), metrics: [
-    metric("Price read correctly", 97.9, "%", "higher", 97),
-    metric("Pack size read correctly", 94.1, "%", "higher", 92),
-    metric("Marked unreadable", 2.4, "%", "lower", null),
-  ] },
-  { versionId: "shopper-2026.09.2", suite: "gate_properties", cases: 10_000, runAt: ago(60 * 19), metrics: [
-    metric("Rule-breaking carts refused", 100, "%", "higher", 100),
-  ] },
-];
 
 const FAMILY_LABEL: Record<RangeReport["families"][number]["family"], string> = {
   instruction_injection: "Hidden instructions",

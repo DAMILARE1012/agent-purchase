@@ -2,6 +2,9 @@
 Signed receipts (system_design.md §8).
 
 Token: RCPT1.<base64url(canonical JSON payload)>.<base64url(Ed25519 signature)>
+Purchase receipts (M7) use the same keys with the prefix MG1 and a payload that
+binds the payment to the shopper's mandate, the seller's cart, the gate version
+and the agent version.
 Development keeps private keys in the database; production swaps this module's
 key access for a KMS adapter so private keys never leave the KMS.
 """
@@ -23,6 +26,7 @@ from app.formatting import now
 from app.models import Receipt, SigningKey, Transfer
 
 TOKEN_PREFIX = "RCPT1"
+PURCHASE_PREFIX = "MG1"
 
 
 def _b64(data: bytes) -> str:
@@ -58,6 +62,25 @@ def canonical_payload(tx: str, amount_minor: int, currency: str, payee_reference
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
 
 
+def _canonical(payload: dict) -> bytes:
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def purchase_payload(*, purchase_id: str, tx: str, amount_minor: int, currency: str, seller_id: str, payee_reference: str,
+                     mandate_hash: str, cart_hash: str, gate_version: str, agent_version: str, created_at: datetime, kid: str) -> bytes:
+    """What a purchase receipt signs. The payee is hashed, so a receipt doesn't reveal the seller's account number."""
+    return _canonical({
+        "v": 1, "p": purchase_id, "tx": tx, "amt": amount_minor, "ccy": currency, "seller": seller_id, "to": payee_hash(payee_reference),
+        "m": mandate_hash, "c": cart_hash, "g": gate_version, "a": agent_version, "ts": created_at.isoformat(), "kid": kid,
+    })
+
+
+def sign_purchase(db: Session, **fields) -> tuple[str, str]:
+    """Signs a purchase receipt with the active key. Returns (token, kid)."""
+    key = active_key(db)
+    return _sign(purchase_payload(**fields, kid=key.kid), key.private_key_pem or "", PURCHASE_PREFIX), key.kid
+
+
 def _generate_key(kid: str) -> SigningKey:
     private = Ed25519PrivateKey.generate()
     return SigningKey(
@@ -81,10 +104,10 @@ def active_key(db: Session) -> SigningKey:
     return key
 
 
-def _sign(payload: bytes, private_key_pem: str) -> str:
+def _sign(payload: bytes, private_key_pem: str, prefix: str = TOKEN_PREFIX) -> str:
     private = serialization.load_pem_private_key(private_key_pem.encode(), password=None)
     assert isinstance(private, Ed25519PrivateKey)
-    return f"{TOKEN_PREFIX}.{_b64(payload)}.{_b64(private.sign(payload))}"
+    return f"{prefix}.{_b64(payload)}.{_b64(private.sign(payload))}"
 
 
 def issue_receipt(db: Session, t: Transfer) -> Receipt:
@@ -109,9 +132,9 @@ class ParsedToken:
     signature: bytes
 
 
-def parse_token(token: str) -> ParsedToken | None:
+def parse_token(token: str, prefix: str = TOKEN_PREFIX) -> ParsedToken | None:
     parts = token.strip().split(".")
-    if len(parts) != 3 or parts[0] != TOKEN_PREFIX:
+    if len(parts) != 3 or parts[0] != prefix:
         return None
     try:
         payload_bytes = _unb64(parts[1])

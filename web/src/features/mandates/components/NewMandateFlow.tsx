@@ -8,13 +8,12 @@ import { useStartRunMutation } from "@/features/runs";
 import { errorMessage } from "@/lib/api-error";
 import { useNow } from "@/lib/useNow";
 import { useAppDispatch } from "@/store/hooks";
-import type { MandateDraft, MandateLimits, MandateMode } from "@/types/domain";
-import { useCreateMandateMutation, useDraftMandateMutation } from "../api";
+import type { Mandate, MandateDraft, MandateLimits, MandateMode } from "@/types/domain";
+import { useDraftMandateMutation } from "../api";
 import { validateLimits } from "../lib/form";
-import { mandateHash } from "../lib/limits";
 import { LimitsTable } from "./LimitsTable";
 import { MandateForm } from "./MandateForm";
-import { PasskeyDialog } from "./PasskeyDialog";
+import { MandateSignDialog } from "./MandateSignDialog";
 
 const EXAMPLES: Array<{ text: string; mode: MandateMode }> = [
   { text: "HP 107a toner, under ₦40,000, from a verified seller, delivered by Friday", mode: "present" },
@@ -32,11 +31,10 @@ export function NewMandateFlow() {
   const [draft, setDraft] = useState<MandateDraft | null>(null);
   const [limits, setLimits] = useState<MandateLimits | null>(null);
   const [showErrors, setShowErrors] = useState(false);
-  const [signing, setSigning] = useState<{ hash: string } | null>(null);
+  const [signing, setSigning] = useState(false);
   const [startNow, setStartNow] = useState(true);
 
   const [compile, compiling] = useDraftMandateMutation();
-  const [create, creating] = useCreateMandateMutation();
   const [startRun] = useStartRunMutation();
 
   const errors = limits ? validateLimits(limits, mode, now) : {};
@@ -51,22 +49,20 @@ export function NewMandateFlow() {
     }
   }
 
-  async function openSigning() {
+  function openSigning() {
     setShowErrors(true);
     if (!limits || errorCount > 0) return;
-    setSigning({ hash: await mandateHash(mode, limits) });
+    setSigning(true);
   }
 
-  async function sign() {
-    if (!draft || !limits || !signing) return;
-    const res = await create({ draft, limits, assertion: `sandbox-passkey:${signing.hash}` });
-    if (!("data" in res) || !res.data) return;
-    dispatch(notify("Mandate signed."));
+  async function signed(mandate: Mandate) {
+    setSigning(false);
+    dispatch(notify("Mandate signed with your passkey."));
     if (startNow) {
-      const run = await startRun({ mandateId: res.data.id });
+      const run = await startRun({ mandateId: mandate.id });
       if ("data" in run && run.data) return router.push(`/shop/runs/${run.data.id}`);
     }
-    router.push(`/shop/mandates/${res.data.id}`);
+    router.push(`/shop/mandates/${mandate.id}`);
   }
 
   if (!draft || !limits) {
@@ -152,7 +148,7 @@ export function NewMandateFlow() {
       )}
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Card>
-          <MandateForm limits={limits} mode={mode} defaulted={draft.defaulted} errors={showErrors ? errors : {}} onChange={setLimits} />
+          <MandateForm limits={limits} mode={mode} defaulted={draft.defaulted} evidence={draft.evidence} errors={showErrors ? errors : {}} onChange={setLimits} />
         </Card>
         <Card className="flex flex-col gap-4 lg:sticky lg:top-20">
           <h2 className="font-display text-lg font-semibold">You&apos;re signing exactly this</h2>
@@ -163,22 +159,13 @@ export function NewMandateFlow() {
             Start shopping as soon as it&apos;s signed
           </label>
           <Button onClick={openSigning}><Icon name="key" className="size-4" /> Sign with passkey</Button>
-          <p className="text-xs text-muted">Drafted by {draft.compiledBy}</p>
+          <p className="text-xs text-muted">
+            Drafted by {draft.compiledBy}. Every value comes from your words, quoted under each field; anything the AI couldn&apos;t tie to your words was discarded.
+          </p>
         </Card>
       </div>
 
-      <PasskeyDialog
-        open={!!signing}
-        onClose={() => { setSigning(null); creating.reset(); }}
-        title="Sign this mandate"
-        confirmLabel="Sign"
-        onConfirm={sign}
-        error={errorMessage(creating.error)}
-      >
-        <LimitsTable limits={limits} mode={mode} compact />
-        <p className="mt-3 text-muted">Hash being signed</p>
-        <p className="break-all rounded-md bg-surface-2 px-3 py-2 font-mono text-xs">{signing?.hash}</p>
-      </PasskeyDialog>
+      <MandateSignDialog open={signing} onClose={() => setSigning(false)} draft={draft} limits={limits} mode={mode} onSigned={signed} />
     </div>
   );
 }

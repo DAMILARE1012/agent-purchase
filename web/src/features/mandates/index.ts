@@ -5,4 +5,3 @@ export { MandateStatusBadge, ModeBadge, SpendMeter } from "./components/MandateB
 export { MandateDetail } from "./components/MandateDetail";
 export { MandatesList } from "./components/MandatesList";
 export { NewMandateFlow } from "./components/NewMandateFlow";
-export { PasskeyDialog } from "./components/PasskeyDialog";

@@ -37,7 +37,7 @@ class Account(Base):
     account_number: Mapped[str | None] = mapped_column(String(10), unique=True)
     kind: Mapped[str] = mapped_column(String(10))  # user | system
     name: Mapped[str] = mapped_column(String(120))
-    currency: Mapped[str] = mapped_column(String(3), default="USD")
+    currency: Mapped[str] = mapped_column(String(3), default="NGN")
     status: Mapped[str] = mapped_column(String(10), default="active")
     created_at: Mapped[datetime] = _now_col()
 
@@ -173,3 +173,209 @@ class Label(Base):
     source: Mapped[str] = mapped_column(String(20))
     labeled_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = _now_col()
+
+
+class Merchant(Base):
+    """A seller in the platform's directory (system_design.md §5). Its public key verifies its carts."""
+
+    __tablename__ = "merchants"
+
+    id: Mapped[str] = mapped_column(String(60), primary_key=True)
+    display_name: Mapped[str] = mapped_column(String(120))
+    legal_name: Mapped[str] = mapped_column(String(160))
+    tier: Mapped[str] = mapped_column(String(12))  # verified | known | new | suspended
+    category: Mapped[str] = mapped_column(String(80))
+    city: Mapped[str] = mapped_column(String(80))
+    catalog_kind: Mapped[str] = mapped_column(String(12))  # structured | images | mixed
+    public_key: Mapped[str] = mapped_column(String(64))  # Ed25519, raw 32 bytes, base64url
+    key_id: Mapped[str] = mapped_column(String(100))
+    owner_username: Mapped[str | None] = mapped_column(String(100), index=True)
+    # Sandbox only: a test-marketplace attacker. Never used by the gate.
+    adversarial: Mapped[bool] = mapped_column(Boolean, default=False)
+    joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = _now_col()
+
+
+class MerchantAccount(Base):
+    """A settlement account a seller registered. Payments may only go to verified ones."""
+
+    __tablename__ = "merchant_accounts"
+    __table_args__ = (Index("uq_merchant_accounts_bank_number", "bank_code", "account_number", unique=True),)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), index=True)
+    bank_code: Mapped[str] = mapped_column(String(10))
+    bank_name: Mapped[str] = mapped_column(String(80))
+    account_number: Mapped[str] = mapped_column(String(10))
+    # From the bank's name enquiry, never from the seller.
+    name_on_account: Mapped[str | None] = mapped_column(String(160))
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = _now_col()
+
+
+class Mandate(Base):
+    """A shopper's signed limits (system_design.md §3 step 1). The gate reads only this and the cart."""
+
+    __tablename__ = "mandates"
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    status: Mapped[str] = mapped_column(String(12))  # active | used_up | expired | revoked
+    mode: Mapped[str] = mapped_column(String(12))  # present | not_present
+    request: Mapped[str] = mapped_column(Text)
+    limits: Mapped[dict] = mapped_column(JSON)
+    # SHA-256 of the canonical {mode, limits}; the passkey signs this (verified from M6).
+    mandate_hash: Mapped[str] = mapped_column(String(64))
+    # The signature, as JSON: a WebAuthn assertion over the mandate's challenge, or a labelled sandbox test signature.
+    assertion: Mapped[str] = mapped_column(Text)
+    signature_kind: Mapped[str] = mapped_column(String(12), default="test")  # passkey | test
+    passkey_id: Mapped[int | None] = mapped_column(ForeignKey("passkeys.id"))
+    compiled_by: Mapped[str | None] = mapped_column(String(120))
+    uses: Mapped[int] = mapped_column(BigInteger, default=0)
+    spent_minor: Mapped[int] = mapped_column(BigInteger, default=0)
+    signed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = _now_col()
+
+
+class AgentRelease(Base):
+    """Prompt versions, models and settings released together (system_design.md §5). Mirrors app/agent/releases.py."""
+
+    __tablename__ = "agent_releases"
+
+    id: Mapped[str] = mapped_column(String(60), primary_key=True)
+    status: Mapped[str] = mapped_column(String(12))  # live | candidate | retired
+    model: Mapped[str] = mapped_column(String(80))
+    fallback_model: Mapped[str] = mapped_column(String(80))
+    prompts: Mapped[dict] = mapped_column(JSON)
+    params: Mapped[dict] = mapped_column(JSON)
+    changelog: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class AgentRun(Base):
+    """One AI shopping run under a mandate: queued, then worked by a worker, ending with a cart or not."""
+
+    __tablename__ = "agent_runs"
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    mandate_id: Mapped[str] = mapped_column(ForeignKey("mandates.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    release_id: Mapped[str] = mapped_column(ForeignKey("agent_releases.id"))
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    priority: Mapped[str] = mapped_column(String(12))  # interactive | background
+    began_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    signed_cart: Mapped[dict | None] = mapped_column(JSON)
+    cart_id: Mapped[str | None] = mapped_column(String(80), index=True)
+    cart_view: Mapped[dict | None] = mapped_column(JSON)
+    decision: Mapped[dict | None] = mapped_column(JSON)
+    outcome_note: Mapped[str | None] = mapped_column(Text)
+    purchase_id: Mapped[str | None] = mapped_column(String(40))
+    tokens: Mapped[int] = mapped_column(BigInteger, default=0)
+    cost_micro_usd: Mapped[int] = mapped_column(BigInteger, default=0)
+    latency_ms: Mapped[int] = mapped_column(BigInteger, default=0)
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = _now_col()
+
+
+class RunStep(Base):
+    """One step of a run's trace: a model call, a tool call, the gate."""
+
+    __tablename__ = "run_steps"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("agent_runs.id"), index=True)
+    seq: Mapped[int] = mapped_column(BigInteger)
+    kind: Mapped[str] = mapped_column(String(24))
+    summary: Mapped[str] = mapped_column(Text)
+    seller_id: Mapped[str | None] = mapped_column(String(60))
+    untrusted: Mapped[bool] = mapped_column(Boolean, default=False)
+    injection_score: Mapped[float | None] = mapped_column(Float)
+    model: Mapped[str | None] = mapped_column(String(80))
+    tokens_in: Mapped[int] = mapped_column(BigInteger, default=0)
+    tokens_out: Mapped[int] = mapped_column(BigInteger, default=0)
+    latency_ms: Mapped[int] = mapped_column(BigInteger, default=0)
+    cost_micro_usd: Mapped[int] = mapped_column(BigInteger, default=0)
+    detail: Mapped[dict | None] = mapped_column(JSON)
+    at: Mapped[datetime] = _now_col()
+
+
+class InferenceLog(Base):
+    """Every model call through the gateway (system_design.md §5, LLM gateway)."""
+
+    __tablename__ = "inference_log"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    run_id: Mapped[str | None] = mapped_column(String(40), index=True)
+    user_id: Mapped[str | None] = mapped_column(String(64))
+    task: Mapped[str] = mapped_column(String(40))
+    provider: Mapped[str] = mapped_column(String(20))
+    model: Mapped[str] = mapped_column(String(80))
+    prompt_version: Mapped[str] = mapped_column(String(20))
+    input_hash: Mapped[str] = mapped_column(String(64))
+    output: Mapped[dict | None] = mapped_column(JSON)
+    tokens_in: Mapped[int] = mapped_column(BigInteger, default=0)
+    tokens_out: Mapped[int] = mapped_column(BigInteger, default=0)
+    latency_ms: Mapped[int] = mapped_column(BigInteger, default=0)
+    queue_ms: Mapped[int] = mapped_column(BigInteger, default=0)
+    cost_micro_usd: Mapped[int] = mapped_column(BigInteger, default=0)
+    outcome: Mapped[str] = mapped_column(String(20))  # ok | cached | fallback | schema_error | error | budget
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class Passkey(Base):
+    """A shopper's WebAuthn credential, registered with the platform to sign mandates and approve payments."""
+
+    __tablename__ = "passkeys"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    credential_id: Mapped[str] = mapped_column(String(400), unique=True)  # base64url
+    public_key: Mapped[str] = mapped_column(Text)  # COSE key, base64url
+    sign_count: Mapped[int] = mapped_column(BigInteger, default=0)
+    name: Mapped[str] = mapped_column(String(80))
+    transports: Mapped[list | None] = mapped_column(JSON)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = _now_col()
+
+
+class Purchase(Base):
+    """
+    A cart the shopper approved and the gate allowed at the moment of payment (M7).
+    Unique per run, per cart and per transfer: a cart is paid at most once.
+    """
+
+    __tablename__ = "purchases"
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("agent_runs.id"), unique=True)
+    cart_id: Mapped[str] = mapped_column(String(80), unique=True)
+    mandate_id: Mapped[str] = mapped_column(ForeignKey("mandates.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"), index=True)
+    transfer_tx: Mapped[str] = mapped_column(ForeignKey("transfers.tx"), unique=True)
+    total_minor: Mapped[int] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(String(3))
+    summary: Mapped[str] = mapped_column(String(300))
+    status: Mapped[str] = mapped_column(String(12))  # paying | paid | failed | reversed | refunded
+    payee_bank_code: Mapped[str] = mapped_column(String(10))
+    payee_account_number: Mapped[str] = mapped_column(String(10))
+    payee_name: Mapped[str] = mapped_column(String(160))
+    mandate_hash: Mapped[str] = mapped_column(String(64))
+    # SHA-256 of the seller-signed cart's canonical JSON: exactly what the seller signed and the shopper approved.
+    cart_hash: Mapped[str] = mapped_column(String(64))
+    gate_version: Mapped[str] = mapped_column(String(40))
+    agent_version: Mapped[str] = mapped_column(String(60))
+    # The gate's decision at the moment of payment (not the one from when the AI proposed the cart).
+    decision: Mapped[dict] = mapped_column(JSON)
+    approval_kind: Mapped[str] = mapped_column(String(12))  # passkey | test
+    approval: Mapped[str] = mapped_column(Text)  # The WebAuthn assertion over the cart's challenge, as JSON.
+    passkey_id: Mapped[int | None] = mapped_column(ForeignKey("passkeys.id"))
+    receipt_token: Mapped[str] = mapped_column(Text)
+    receipt_kid: Mapped[str] = mapped_column(ForeignKey("signing_keys.kid"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

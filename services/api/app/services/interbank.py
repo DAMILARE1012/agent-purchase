@@ -12,6 +12,11 @@ Inbound (someone at another bank pays a wallet):
 
 A timeout never fails a payment: it stays pending until a webhook or a status
 query settles it one way or the other.
+
+Purchases (M7) hold the funds and commit first, then call send(): if the process
+dies in between, the payment is pending with no network record, and the resolver
+submits it (the switch is idempotent by our reference). Every outcome is passed
+to payments.on_transfer_update, which moves the purchase and the run along.
 """
 
 import logging
@@ -48,12 +53,17 @@ def _payload(db: Session, t: Transfer) -> dict:
 
 
 def submit(db: Session, t: Transfer, *, funds_in_suspense: bool = False) -> None:
-    """Sends an outbound payment to the network and applies whatever it answers."""
+    """Holds the funds (unless already held) and sends an outbound payment to the network."""
     if not funds_in_suspense:
         ledger.post(db, f"Inter-bank transfer to {t.counterparty_bank_name}", ledger.transfer_lines(t.payer_account_id, ledger.SUSPENSE, t.amount_minor), transfer_tx=t.tx)
     t.status = "pending"
     t.network_status = "submitted"
     db.flush()
+    send(db, t)
+
+
+def send(db: Session, t: Transfer) -> None:
+    """Sends a pending, held payment to the network and applies whatever it answers. Safe to repeat."""
     try:
         remote = network.submit_transfer(_payload(db, t))
     except network.NetworkUnavailable:
@@ -61,6 +71,7 @@ def submit(db: Session, t: Transfer, *, funds_in_suspense: bool = False) -> None
         return
     except ApiError as exc:
         _fail(db, t, f"Rejected by the network: {exc.message}")
+        _after_update(db, t)
         return
     apply_update(db, t, remote)
 
@@ -86,7 +97,9 @@ def _reverse(db: Session, t: Transfer) -> None:
 
 
 def apply_update(db: Session, t: Transfer, remote: dict) -> None:
-    """Moves an outbound payment to the network's reported state. Safe to call repeatedly."""
+    """Moves an outbound payment to the network's reported state. Safe to call repeatedly, and concurrently."""
+    # Lock and re-read: a webhook and the resolver may report the same outcome at the same time.
+    db.refresh(t, with_for_update=True)
     t.network_session_id = t.network_session_id or remote.get("sessionId")
     status = remote.get("status")
     if t.status == "pending":
@@ -102,6 +115,13 @@ def apply_update(db: Session, t: Transfer, remote: dict) -> None:
     elif t.status == "settled" and status == "reversed":
         _reverse(db, t)
     db.flush()
+    _after_update(db, t)
+
+
+def _after_update(db: Session, t: Transfer) -> None:
+    from app.services import payments  # Local import: payments builds on this module.
+
+    payments.on_transfer_update(db, t)
 
 
 def credit_inbound(db: Session, data: dict) -> Transfer:
@@ -122,7 +142,7 @@ def credit_inbound(db: Session, data: dict) -> Transfer:
         payer_account_id=ledger.NETWORK,
         payee_account_id=account.id,
         amount_minor=int(data["amountMinor"]),
-        currency="USD",
+        currency=ledger.CURRENCY,
         refunded_minor=0,
         status="settled",
         note=data.get("narration") or None,

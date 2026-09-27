@@ -120,7 +120,7 @@ flowchart LR
 | Component | What it does |
 |---|---|
 | **Web app** | Where people set mandates, watch the AI shop, approve carts and see receipts. Also the ops console for us |
-| **Mandate service** | Turns a sentence into a form with Qwen, checks it, stores signed mandates, allows cancelling |
+| **Mandate service** | Turns a sentence into a form with Qwen, checks it, verifies the passkey signature over the exact limits, stores signed mandates, allows cancelling |
 | **Agent runtime** | Runs the AI shopper step by step on a pool of workers fed by a queue, with limits on steps, time and cost |
 | **Gate** | The rule-based checks. The only thing that can release money |
 | **Seller directory** | Each seller's legal name, signing key and real bank accounts |
@@ -158,13 +158,13 @@ It never approves, chooses the account to pay, or moves money.
 
 | Situation | How it's handled |
 |---|---|
-| Approve clicked twice, or retried | The cart ID is the idempotency key; the database allows one purchase per cart |
-| Two purchases racing on one mandate | Uses and spending are reserved in one conditional update, which fails if it would exceed the limits: `... WHERE uses < max_uses AND spent + total <= max_total AND not revoked AND not expired` |
-| Two purchases racing on one balance | The balance row is locked while the hold is posted (already built in the ledger) |
+| Approve clicked twice, or retried | A second approval waits for the first, then gets the same purchase; the database allows one purchase per run and per cart |
+| Two purchases racing on one mandate | The mandate row is locked, the gate runs again, then the use and spend are taken with a conditional update (`WHERE status = 'active' AND uses < max_uses`). CHECK constraints make the database itself refuse a mandate used past its signed limits |
+| Two purchases racing on one balance | The balance row is locked while the hold is posted |
 | Mandate cancelled while a payment is being approved | Both lock the mandate row; whichever commits first wins, and the screen shows the true outcome |
-| Something changed between the gate's check and your approval (cart expired, mandate cancelled, cap reached) | The gate runs **again** inside the payment transaction; the first check is only for display |
-| Bank webhook and status check arrive together | Status changes are conditional updates (only from `pending`), so only one applies (already built) |
-| Two runs on a single-use mandate | Only one active run per single-use mandate (unique index) |
+| Something changed between the gate's check and your approval (cart expired, mandate cancelled, seller suspended, cap reached) | The gate runs **again** inside the payment transaction; the first check is only for display |
+| Bank webhook and status check arrive together | The transfer row is locked and re-read before an outcome is applied, so only one applies |
+| Several runs on one mandate | One AI run shopping per mandate at a time (unique index), to limit model spend. Several carts may wait for approval; paying is what keeps the mandate within its uses |
 
 ## 6. Milestones
 
@@ -207,41 +207,49 @@ We build the **UI first**, on realistic mock data, so every screen can be seen a
 **Done when:** each role signs in to its own workspace; an engineer can see why a mock run was blocked and compare two agent versions.
 
 ### M4 · Test marketplace
-- [ ] Seller service with 20+ honest sellers: structured catalogs and photo-only catalogs (flyers, price lists)
-- [ ] Carts signed by the seller's key; delivery quotes
-- [ ] Seller directory with bank accounts at the sandbox banks
-- [ ] Seller pages in the web app come from this service instead of mock data
+- [x] Seller service with 20+ honest sellers: structured catalogs and photo-only catalogs (flyers, price lists)
+- [x] Carts signed by the seller's key; delivery quotes
+- [x] Seller directory with bank accounts at the sandbox banks
+- [x] Seller pages in the web app come from this service instead of mock data
 
 **Done when:** a script can browse, get a signed cart and verify its signature and account.
 
 ### M5 · LLM gateway and Qwen shopper
-- [ ] Gateway: routing, retries, backup models, cost limits, caching, logging
-- [ ] Shared rate limiting in Redis with a fair share per user and priorities
-- [ ] Run queue and worker service; live progress over server-sent events
-- [ ] Agent versions stored and loaded by ID
-- [ ] Shopping loop: Qwen picks one step at a time as strict JSON; seller content marked untrusted
-- [ ] Live test of Qwen on Groq: strict JSON, images, tool calling
-- [ ] Traces recorded for every run
-- [ ] Live shopping view and traces screen use real data
+- [x] Gateway: routing, retries, backup models, cost limits, caching, logging
+- [x] Shared rate limiting in Redis with a fair share per user and priorities
+- [x] Run queue and worker service; live progress over server-sent events
+- [x] Agent versions stored and loaded by ID
+- [x] Shopping loop: Qwen picks one step at a time as strict JSON; seller content marked untrusted
+- [x] Live test of Qwen on Groq: strict JSON, images, tool calling (`app.scripts.groq_live_check`: all six checks pass, including strict JSON schema with an image)
+- [x] Traces recorded for every run
+- [x] Live shopping view and traces screen use real data
+
+Pulled forward so runs are real end to end: storing, listing and cancelling mandates (from M6), and the gate's rules in Python (from M7). A scripted sandbox provider stands in for Groq when no API key is set, and labels itself as such.
 
 **Done when:** the Qwen shopper completes normal shopping tasks and suggests carts; every step is visible in the UI; 20 shoppers running at once share the rate limit fairly.
 
 ### M6 · Mandates
-- [ ] Sentence → form with Qwen; missing details set to the strictest option and asked about
-- [ ] Passkey signing over the exact form (through Keycloak)
-- [ ] Cancelling mandates; counting uses
-- [ ] Mandate screens use real data
+- [x] Sentence → form with Qwen; missing details set to the strictest option and asked about
+- [x] Every value Qwen fills must quote the person's own words, and the value must appear in the quote; anything else is discarded
+- [x] Passkey signing over the exact form: the WebAuthn challenge commits to the mandate's hash, and the stored signature can be re-checked at any time
+- [x] Security page: add and remove passkeys (one that signed a mandate can't be removed)
+- [x] Cancelling mandates (done in M5); counting uses (with payments, M7)
+- [x] Mandate screens use real data (done in M5)
+
+Passkeys are registered with the platform rather than through Keycloak: Keycloak's passkeys prove who is signing in, but can't sign a mandate's contents. Automated tests sign with a labelled test signature, which only the sandbox allows.
 
 **Done when:** a sentence becomes a signed mandate the person reviewed field by field.
 
 ### M7 · Gate and payments
-- [ ] All gate rules, with generated tests showing every rule-breaking cart is refused
-- [ ] Account-name check against the seller directory
-- [ ] Approval, hold, transfer, one payment per cart
-- [ ] Gate re-run inside the payment transaction; mandate uses and spending reserved with a conditional update
-- [ ] Concurrency tests: parallel approvals, double clicks, cancel during payment, many purchases against one cap
-- [ ] Access tests: every role blocked from other users' data
-- [ ] Signed purchase receipts; verify page uses real data
+- [x] All gate rules (implemented in M5), with generated tests showing every rule-breaking cart is refused (Hypothesis: honest carts are never refused; any one or several broken rules always are; any change to a signed cart breaks the seller's signature)
+- [x] Account-name check against the seller directory, asked of the bank again at the moment of payment
+- [x] Approval with a passkey over the cart's hash, hold, transfer, one payment per cart
+- [x] Gate re-run inside the payment transaction; mandate uses and spending reserved with a conditional update, backed by database CHECK constraints
+- [x] Concurrency tests: 20 clicks on one cart pay once; 50 parallel approvals against a 5-purchase mandate pay exactly 5; cancel during payment; not enough money holds nothing
+- [x] Access tests: every role blocked from other users' data (141 checks)
+- [x] Signed purchase receipts; verify page uses real data; seller orders use real data
+
+The ledger moved from the previous product's dollars to naira. Refunds are left for M12, with disputes: sellers see a note instead of the refund button. Ops' "violations" figure is now checked from stored purchases (over the amount, after expiry, without the gate's allow) and should always be 0.
 
 **Done when:** an approved cart is paid once to the right account; any rule-breaking cart is refused with reasons; 50 parallel approvals against one mandate never exceed its limits.
 

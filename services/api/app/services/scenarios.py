@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app import schemas
 from app.formatting import now
 from app.models import Receipt, Transfer
-from app.services import signing
+from app.services import ledger, signing
 from app.services.seed import DEMO_USERS
 
 _USERS = {u.username: u for u in DEMO_USERS}
@@ -37,7 +37,7 @@ def _token_for_note(db: Session, note: str) -> str | None:
 
 def _forged_token(db: Session) -> str:
     key = signing.active_key(db)
-    payload = signing.canonical_payload("tx_7F00D0000000", 90_000, "USD", "acct_rita", now() - timedelta(minutes=18), key.kid)
+    payload = signing.canonical_payload("tx_7F00D0000000", 90_000, ledger.CURRENCY, "acct_rita", now() - timedelta(minutes=18), key.kid)
     return signing.forge_receipt(payload)
 
 

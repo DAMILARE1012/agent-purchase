@@ -36,6 +36,10 @@ export const sellersApi = api.injectEndpoints({
       query: (body) => ({ url: "seller/accounts", method: "POST", body }),
       invalidatesTags: [{ type: "Seller", id: "ME" }, { type: "Seller", id: "LIST" }],
     }),
+    removeAccount: build.mutation<Seller, { bankCode: string; accountNumber: string }>({
+      query: ({ bankCode, accountNumber }) => ({ url: `seller/accounts/${bankCode}/${accountNumber}`, method: "DELETE" }),
+      invalidatesTags: [{ type: "Seller", id: "ME" }, { type: "Seller", id: "LIST" }],
+    }),
     setSellerTier: build.mutation<Seller, { id: string; tier: SellerTier }>({
       query: ({ id, tier }) => ({ url: `admin/sellers/${id}/tier`, method: "POST", body: { tier } }),
       invalidatesTags: (_r, _e, { id }) => [{ type: "Seller", id }, { type: "Seller", id: "LIST" }],
@@ -52,5 +56,6 @@ export const {
   useGetMyOrdersQuery,
   useRefundOrderMutation,
   useRegisterAccountMutation,
+  useRemoveAccountMutation,
   useSetSellerTierMutation,
 } = sellersApi;

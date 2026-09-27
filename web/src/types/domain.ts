@@ -23,6 +23,8 @@ export interface MandateLimits {
   /** Seller IDs, used when sellerPolicy is "listed". */
   sellerIds: string[];
   deliverBy: string | null;
+  /** Where to deliver: sellers quote delivery by city. */
+  deliveryCity: string;
   expiresAt: string;
   maxUses: number;
   /** Standing mandates only: a cap per period. */
@@ -50,6 +52,19 @@ export interface Mandate {
   revokedAt: string | null;
   createdAt: string;
   runIds: string[];
+  /** "passkey": a WebAuthn signature over the exact limits. "test": sandbox scripts only. */
+  signatureKind?: "passkey" | "test";
+  signedWith?: string | null;
+  compiledBy?: string | null;
+}
+
+export interface MandateSignature {
+  kind: "passkey" | "test";
+  valid: boolean;
+  mandateHash: string;
+  hashMatches: boolean;
+  passkeyName: string | null;
+  signedAt: string;
 }
 
 export interface MandateQuestion {
@@ -66,6 +81,10 @@ export interface MandateDraft {
   defaulted: Array<keyof MandateLimits>;
   questions: MandateQuestion[];
   compiledBy: string;
+  /** The shopper's own words behind each field the model filled (every value is grounded in a quote). */
+  evidence?: Partial<Record<keyof MandateLimits, string>>;
+  /** Fields the model proposed but couldn't ground in the request: discarded. */
+  droppedFields?: string[];
 }
 
 export interface DraftMandateRequest {
@@ -76,8 +95,14 @@ export interface DraftMandateRequest {
 export interface CreateMandateRequest {
   draft: MandateDraft;
   limits: MandateLimits;
-  /** WebAuthn assertion over mandateHash (mocked until M6). */
-  assertion: string;
+  /** A WebAuthn assertion for the challenge from mandates/sign-options, which commits to the exact limits. */
+  signature: { kind: "passkey"; challengeId: string; credential: Record<string, unknown> };
+}
+
+export interface MandateSignOptions {
+  challengeId: string;
+  mandateHash: string;
+  publicKey: Record<string, unknown>;
 }
 
 // ---- Sellers ----------------------------------------------------------------
@@ -89,6 +114,8 @@ export interface SellerAccount {
   bankCode: string;
   bankName: string;
   accountNumberMasked: string;
+  /** Only in the seller's own workspace. */
+  accountNumber?: string | null;
   nameOnAccount: string;
   verifiedAt: string | null;
 }
@@ -161,6 +188,8 @@ export interface RunStep {
   tokensOut: number;
   latencyMs: number;
   costMicroUsd: number;
+  /** The model's answer came from the gateway cache (same input, prompt version and model). */
+  cached?: boolean;
 }
 
 export interface CartLine {
@@ -240,7 +269,8 @@ export interface AgentRun {
 
 // ---- Purchases and receipts ---------------------------------------------------
 
-export type PurchaseStatus = "pending" | "paid" | "refunded" | "disputed";
+/** pending: sent, waiting for the bank. failed / reversed: the bank didn't pay or sent it back; the money is back in the balance. */
+export type PurchaseStatus = "pending" | "paid" | "failed" | "reversed" | "refunded" | "disputed";
 
 export interface PurchaseReceipt {
   id: string;
@@ -252,6 +282,8 @@ export interface PurchaseReceipt {
   agentVersion: string;
   networkSessionId: string;
   signingKeyId: string;
+  /** How the shopper approved the payment: their passkey, or a sandbox test script. */
+  approvalKind?: "passkey" | "test";
 }
 
 export interface Purchase {
@@ -267,6 +299,14 @@ export interface Purchase {
   paidAt: string;
   payee: SellerAccount;
   receipt: PurchaseReceipt;
+  lines?: CartLine[];
+  deliveryBy?: string | null;
+}
+
+export interface CartApprovalOptions {
+  challengeId: string;
+  cartHash: string;
+  publicKey: Record<string, unknown>;
 }
 
 export interface ReceiptVerification {
@@ -319,12 +359,10 @@ export interface ResolveDisputeRequest {
   outcome: "refunded" | "rejected";
 }
 
+/** The API asks the bank for the account name itself; the client never supplies it. */
 export interface RegisterAccountRequest {
   bankCode: string;
-  bankName: string;
   accountNumber: string;
-  /** From the bank's name enquiry, not typed by the seller. */
-  nameOnAccount: string;
 }
 
 // ---- Admin ----------------------------------------------------------------------
@@ -355,19 +393,52 @@ export interface AgentVersion {
 export interface EvalMetric {
   name: string;
   value: number;
-  unit: "%" | "ms" | "₦" | "$" | "steps";
+  unit: "%" | "ms" | "₦" | "$" | "steps" | "tokens";
   /** Lower is better for rates of bad things, latency and cost. */
   better: "higher" | "lower";
   threshold: number | null;
   pass: boolean;
+  /** How many cases (or fields, items) it's measured over. 0: nothing of this kind in the test set. */
+  n?: number;
 }
 
+export type EvalSuite = "intent_fidelity" | "shopping_tasks" | "catalog_reading" | "gate_properties";
+
 export interface EvalResult {
+  /** A release, or a model-comparison variant ("<release>~<model>"). */
   versionId: string;
-  suite: "intent_fidelity" | "shopping_tasks" | "catalog_reading" | "gate_properties";
+  suite: EvalSuite;
   cases: number;
   metrics: EvalMetric[];
   runAt: string;
+  model?: string;
+  /** "groq": the real model. "sandbox": the scripted stand-in; the release gate ignores those results. */
+  provider?: string;
+  /** Measured for another release with the identical fingerprint (same prompts, model, settings and test set). */
+  reusedFrom?: string | null;
+  /** A prompt, model, setting or test set changed since this was measured. */
+  stale?: boolean;
+  partial?: boolean;
+  tokens?: number;
+  costMicroUsd?: number;
+  wallMs?: number;
+}
+
+export interface GateVerdictRow {
+  suite: EvalSuite;
+  metric: string;
+  candidate: EvalMetric;
+  baseline: EvalMetric | null;
+  problems: string[];
+}
+
+/** The release gate's verdict, from the same code CI runs. */
+export interface GateVerdict {
+  baseline: string;
+  candidate: string;
+  pass: boolean;
+  reasons: string[];
+  rows: GateVerdictRow[];
 }
 
 export type AttackFamily =
@@ -399,4 +470,7 @@ export interface OpsOverview {
   queueDepth: number;
   fallbackRate: number;
   liveVersion: string;
+  /** "groq", or "sandbox" (the scripted stand-in used without a Groq API key). */
+  modelProvider?: "groq" | "sandbox";
+  rateLimits?: { requestsPerMinute: number; tokensPerMinute: number; interactiveReserve: number };
 }

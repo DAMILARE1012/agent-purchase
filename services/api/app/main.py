@@ -5,8 +5,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.errors import ApiError, api_error_handler
-from app.routers import banks, ledger, network, risk, sandbox, session, transfers, verification
-from app.services import interbank
+from app.db import SessionLocal
+from app.routers import agent, banks, ledger, network, risk, sandbox, sellers, session, transfers, verification
+from app.services import interbank, merchants
 
 log = logging.getLogger("api")
 RESOLVER_INTERVAL_SECONDS = 15
@@ -24,11 +25,30 @@ async def resolve_pending_forever() -> None:
             log.exception("Pending-payment resolver failed")
 
 
+def _sync_sellers() -> dict:
+    with SessionLocal() as db:
+        return merchants.sync_registry(db)
+
+
+async def sync_sellers_on_start(attempts: int = 30, delay: float = 5.0) -> None:
+    """Loads the seller directory from the sandbox marketplace, retrying until it answers."""
+    for _ in range(attempts):
+        try:
+            result = await asyncio.to_thread(_sync_sellers)
+            log.info("Seller directory synced: %s", result)
+            return
+        except Exception as exc:  # The marketplace or switch may still be starting.
+            log.warning("Seller directory sync failed, retrying: %s", exc)
+            await asyncio.sleep(delay)
+    log.error("Seller directory sync gave up; call POST /v1/sandbox/sellers/sync as ops to retry")
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    task = asyncio.create_task(resolve_pending_forever())
+    tasks = [asyncio.create_task(resolve_pending_forever()), asyncio.create_task(sync_sellers_on_start())]
     yield
-    task.cancel()
+    for task in tasks:
+        task.cancel()
 
 
 app = FastAPI(
@@ -39,7 +59,7 @@ app = FastAPI(
 )
 app.add_exception_handler(ApiError, api_error_handler)
 
-for module in (session, banks, transfers, verification, risk, ledger, sandbox, network):
+for module in (session, banks, transfers, verification, risk, ledger, sandbox, network, sellers, agent):
     app.include_router(module.router, prefix="/v1")
 app.include_router(verification.wellknown)
 

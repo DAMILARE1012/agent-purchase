@@ -16,6 +16,9 @@ from sqlalchemy.orm import Session
 from app.formatting import new_id, now
 from app.models import Account, JournalEntry, LedgerLine
 
+# Shopping is in naira, so every account and transfer is (moved from USD in M7).
+CURRENCY = "NGN"
+
 FUNDING = "acct_funding"
 SUSPENSE = "acct_suspense"
 REVERSALS = "acct_reversals"
@@ -40,7 +43,7 @@ class Line:
 def ensure_system_accounts(db: Session) -> None:
     for account_id, name in SYSTEM_ACCOUNTS.items():
         if db.get(Account, account_id) is None:
-            db.add(Account(id=account_id, user_id=None, kind="system", name=name, currency="USD"))
+            db.add(Account(id=account_id, user_id=None, kind="system", name=name, currency=CURRENCY))
     db.flush()
 
 

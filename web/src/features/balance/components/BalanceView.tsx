@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert, Card, CopyButton, EmptyState, ErrorState, LoadingState, Money, PageHeader } from "@/components/ui";
+import { Card, CopyButton, EmptyState, ErrorState, LoadingState, Money, PageHeader } from "@/components/ui";
 import { formatAccountNumber } from "@/features/banking";
 import { errorMessage } from "@/lib/api-error";
 import { formatRelative } from "@/lib/dates";
@@ -21,12 +21,6 @@ export function BalanceView() {
         <ErrorState message={errorMessage(error) ?? "Couldn't load your balance."} />
       ) : (
         <>
-          {w.currency !== "NGN" && (
-            <Alert tone="ai" title="Sandbox balance in US dollars">
-              This balance comes from the ledger the previous product used, which is still in dollars. It moves to naira when payments are rebuilt
-              for AI purchases (milestone M7). AI purchases in the meantime are simulated in naira.
-            </Alert>
-          )}
           <div className="grid gap-4 md:grid-cols-[1.2fr_1fr]">
             <Card className="flex flex-col gap-2">
               <span className="text-sm font-semibold text-muted">Available balance</span>

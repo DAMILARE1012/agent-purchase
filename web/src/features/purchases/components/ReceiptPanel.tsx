@@ -21,6 +21,9 @@ export function ReceiptPanel({ receipt }: { receipt: PurchaseReceipt }) {
     ["AI shopper version", receipt.agentVersion],
     ["Bank session ID", receipt.networkSessionId],
     ["Signing key", receipt.signingKeyId],
+    ...(receipt.approvalKind
+      ? [["You approved with", receipt.approvalKind === "passkey" ? "Your passkey, over this exact cart" : "A sandbox test script (not a passkey)"] as [string, string]]
+      : []),
   ];
 
   return (

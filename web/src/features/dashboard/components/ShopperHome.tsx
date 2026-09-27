@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ButtonLink, Card, EmptyState, ErrorState, Icon, type IconName, LoadingState, Money, PageHeader, Spinner, StatTile } from "@/components/ui";
 import { MandateCard, useGetMandatesQuery } from "@/features/mandates";
-import { useGetPurchasesQuery } from "@/features/purchases";
+import { isSpent, useGetPurchasesQuery } from "@/features/purchases";
 import { isActiveRun, useGetRunsQuery } from "@/features/runs";
 import { useViewer } from "@/features/session";
 import { errorMessage } from "@/lib/api-error";
@@ -45,13 +45,14 @@ export function ShopperHome() {
   const waiting = allRuns.filter((r) => r.status === "awaiting_approval");
   const working = allRuns.filter(isActiveRun);
   const blocked = allRuns.filter((r) => r.status === "blocked");
-  const spent30 = allPurchases.filter((p) => now - Date.parse(p.paidAt) <= 30 * DAY).reduce((n, p) => n + p.totalMinor, 0);
+  const spent30 = allPurchases.filter((p) => isSpent(p) && now - Date.parse(p.paidAt) <= 30 * DAY).reduce((n, p) => n + p.totalMinor, 0);
   const stopped = blocked.reduce((n, r) => n + (r.cart?.totalMinor ?? 0), 0);
 
   const activity: Activity[] = [
     ...allPurchases.map((p) => ({
       id: p.id, at: p.paidAt, href: `/shop/purchases/${p.id}`, icon: "cart" as const, tone: "bg-truth-bg text-truth",
-      text: `Bought ${p.summary} from ${p.sellerName}`, amountMinor: p.totalMinor,
+      text: isSpent(p) ? `Bought ${p.summary} from ${p.sellerName}` : `Payment to ${p.sellerName} didn't go through: ${p.summary}`,
+      amountMinor: p.totalMinor,
     })),
     ...allRuns.filter((r) => ["blocked", "gave_up", "declined"].includes(r.status)).map((r) => ({
       id: r.id, at: r.endedAt ?? r.startedAt, href: `/shop/runs/${r.id}`,

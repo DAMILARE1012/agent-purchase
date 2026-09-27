@@ -28,7 +28,13 @@ const NAV: Record<StaffRole, NavSection[]> = {
         { href: "/shop/purchases", label: "Purchases", icon: "cart" },
       ],
     },
-    { title: "Money", items: [{ href: "/shop/balance", label: "Balance", icon: "wallet" }] },
+    {
+      title: "Account",
+      items: [
+        { href: "/shop/balance", label: "Balance", icon: "wallet" },
+        { href: "/shop/security", label: "Security", icon: "key" },
+      ],
+    },
   ],
   seller: [
     {

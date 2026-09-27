@@ -80,7 +80,7 @@ services:
 
   api:
     build: ./services/api
-    environment:
+    environment: &api-env
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       OIDC_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
       OIDC_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
@@ -94,18 +94,49 @@ services:
       SWITCH_URL: http://switch:8100
       SWITCH_API_KEY: ${SWITCH_API_KEY:?SWITCH_API_KEY is not set}
       SWITCH_WEBHOOK_SECRET: ${SWITCH_WEBHOOK_SECRET:?SWITCH_WEBHOOK_SECRET is not set}
+      MARKETPLACE_URL: http://marketplace:8200
+      MARKETPLACE_API_KEY: ${MARKETPLACE_API_KEY:?MARKETPLACE_API_KEY is not set}
+      MARKETPLACE_PUBLIC_URL: ${MARKETPLACE_PUBLIC_URL}
+      REDIS_URL: redis://redis:6379
+      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      LLM_REQUESTS_PER_MINUTE: ${LLM_REQUESTS_PER_MINUTE:-30}
+      LLM_TOKENS_PER_MINUTE: ${LLM_TOKENS_PER_MINUTE:-60000}
+      LLM_INTERACTIVE_RESERVE: ${LLM_INTERACTIVE_RESERVE:-0.2}
+      LLM_USER_DAILY_TOKENS: ${LLM_USER_DAILY_TOKENS:-300000}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-8}
+      AGENT_RUN_TIMEOUT_SECONDS: ${AGENT_RUN_TIMEOUT_SECONDS:-300}
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-localhost}
+      ALLOW_TEST_SIGNATURES: ${ALLOW_TEST_SIGNATURES:-false}
+      LLM_EVAL_DAILY_TOKENS: ${LLM_EVAL_DAILY_TOKENS:-3000000}
     ports:
       - "${API_PORT:?API_PORT is not set}:8000"
+    # Development: evaluation reports written in the container land in the repo, next to the prompts they measured.
+    volumes:
+      - ./services/api/evals:/srv/evals
     depends_on:
       postgres:
         condition: service_healthy
       switch:
+        condition: service_healthy
+      marketplace:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"]
       interval: 5s
       timeout: 3s
       retries: 30
+
+  # AI shopping run workers: take runs off the Redis queue. Scale with `--scale worker=N` or WORKER_CONCURRENCY.
+  worker:
+    build: ./services/api
+    entrypoint: ["python", "-m", "app.worker"]
+    environment: *api-env
+    depends_on:
+      api:
+        condition: service_healthy
 
   # Sandbox inter-bank payment network: fictional banks, name enquiry, transfers, webhooks, settlement.
   switch:
@@ -124,6 +155,21 @@ services:
       - "${SWITCH_PORT:?SWITCH_PORT is not set}:8100"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/healthz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # Sandbox marketplace: honest and dishonest sellers, catalogs (structured and photo-only), signed carts.
+  marketplace:
+    build: ./services/marketplace
+    environment:
+      MARKETPLACE_API_KEY: ${MARKETPLACE_API_KEY}
+      MARKETPLACE_KEY_SEED: ${MARKETPLACE_KEY_SEED:?MARKETPLACE_KEY_SEED is not set}
+      MARKETPLACE_PUBLIC_URL: ${MARKETPLACE_PUBLIC_URL:?MARKETPLACE_PUBLIC_URL is not set}
+    ports:
+      - "${MARKETPLACE_PORT:?MARKETPLACE_PORT is not set}:8200"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8200/healthz')"]
       interval: 5s
       timeout: 3s
       retries: 30

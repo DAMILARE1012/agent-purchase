@@ -105,7 +105,9 @@ export function RunTrace({ runId, masked = false, backHref }: RunTraceProps) {
                     ) : "—"}
                   </td>
                   <td className="min-w-[13rem] px-4 py-2.5">
-                    {s.model ? (
+                    {s.cached ? (
+                      <span className="text-muted">{s.model} · cached answer</span>
+                    ) : s.model ? (
                       <>
                         <span className="block">{s.model}</span>
                         <span className="text-muted">{s.tokensIn.toLocaleString()} in · {s.tokensOut} out · {s.latencyMs} ms · {formatUsd(s.costMicroUsd)}</span>

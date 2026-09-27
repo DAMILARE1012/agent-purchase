@@ -12,8 +12,8 @@ def new_id(prefix: str) -> str:
     return f"{prefix}_{secrets.token_hex(6).upper()}"
 
 
-def money(amount_minor: int, currency: str = "USD") -> str:
-    symbol = "$" if currency == "USD" else f"{currency} "
+def money(amount_minor: int, currency: str = "NGN") -> str:
+    symbol = {"NGN": "₦", "USD": "$"}.get(currency, f"{currency} ")
     sign = "-" if amount_minor < 0 else ""
     return f"{sign}{symbol}{abs(amount_minor) / 100:,.2f}"
 

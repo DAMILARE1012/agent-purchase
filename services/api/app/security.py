@@ -28,6 +28,8 @@ class Principal:
     name: str
     email: str | None
     roles: frozenset[str] = field(default_factory=frozenset)
+    # The OAuth client the token was issued to (e.g. the web app, or the scan-cli test client).
+    client_id: str | None = None
 
 
 @dataclass
@@ -36,6 +38,7 @@ class Viewer:
 
     user: User
     account: Account | None
+    client_id: str | None = None
 
     @property
     def role(self) -> str:
@@ -75,6 +78,7 @@ def decode_access_token(token: str) -> Principal:
         name=name or username,
         email=claims.get("email"),
         roles=frozenset(claims.get("realm_access", {}).get("roles", [])),
+        client_id=claims.get("azp"),
     )
 
 

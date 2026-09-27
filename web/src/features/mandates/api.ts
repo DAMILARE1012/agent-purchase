@@ -1,4 +1,4 @@
-import type { CreateMandateRequest, DraftMandateRequest, Mandate, MandateDraft } from "@/types/domain";
+import type { CreateMandateRequest, DraftMandateRequest, Mandate, MandateDraft, MandateLimits, MandateSignature, MandateSignOptions } from "@/types/domain";
 import { api } from "@/store/api";
 
 export const mandatesApi = api.injectEndpoints({
@@ -14,6 +14,14 @@ export const mandatesApi = api.injectEndpoints({
     /** Qwen drafts the limits from the shopper's sentence (intent.compile). */
     draftMandate: build.mutation<MandateDraft, DraftMandateRequest>({
       query: (body) => ({ url: "mandates/draft", method: "POST", body }),
+    }),
+    /** A WebAuthn challenge that commits to exactly these limits. */
+    mandateSignOptions: build.mutation<MandateSignOptions, { draft: MandateDraft; limits: MandateLimits }>({
+      query: (body) => ({ url: "mandates/sign-options", method: "POST", body }),
+    }),
+    /** Re-verifies the stored signature from scratch. */
+    getMandateSignature: build.query<MandateSignature, string>({
+      query: (id) => `mandates/${id}/signature`,
     }),
     createMandate: build.mutation<Mandate, CreateMandateRequest>({
       query: (body) => ({ url: "mandates", method: "POST", body }),
@@ -31,5 +39,7 @@ export const {
   useGetMandateQuery,
   useDraftMandateMutation,
   useCreateMandateMutation,
+  useGetMandateSignatureQuery,
+  useMandateSignOptionsMutation,
   useRevokeMandateMutation,
 } = mandatesApi;

@@ -13,10 +13,14 @@ BANKS: dict[str, str] = {
 # so existing accounts keep their numbers. From the 4th entry on, these are the
 # Mandate Gate sandbox sellers' settlement accounts (and one scammer's).
 _HOLDERS: dict[str, list[str]] = {
-    "101": ["Maya Chen", "Daniel Osei", "Lena Fischer", "Ikeja Office Hub Ltd", "Lekki Gadget Hub Ltd"],
-    "102": ["Leo Martins", "Amara Obi", "Hannah Wright", "PrintPoint Enterprises", "IOH Official Stores"],
-    "103": ["Priya Nair", "Tomás Rivera", "Grace Mensah", "Ada Okoro Enterprises", "Cheap Deals Warehouse"],
-    "104": ["Owen Brooks", "Sofia Rossi", "Kwame Asante", "QuickData Nigeria Ltd", "Adebayo Musa"],
+    "101": ["Maya Chen", "Daniel Osei", "Lena Fischer", "Ikeja Office Hub Ltd", "Lekki Gadget Hub Ltd",
+            "Surulere Pharmacy Ltd", "Ibadan Home Essentials Ltd", "Airtime Plus Nigeria Ltd", "Jos Solar and Power Ltd"],
+    "102": ["Leo Martins", "Amara Obi", "Hannah Wright", "PrintPoint Enterprises", "IOH Official Stores",
+            "Abuja Baby Store Ltd", "Yaba Book Hub Enterprises", "Kaduna Office World Ltd", "Aba Quality Shoes Enterprises"],
+    "103": ["Priya Nair", "Tomás Rivera", "Grace Mensah", "Ada Okoro Enterprises", "Cheap Deals Warehouse",
+            "Chioma Nwosu Foodstuff Enterprises", "Glow Beauty Stores Ltd", "Owerri Fresh Mart Ltd", "Toner King Ventures"],
+    "104": ["Owen Brooks", "Sofia Rossi", "Kwame Asante", "QuickData Nigeria Ltd", "Adebayo Musa",
+            "Kano Grains Depot Nig. Ltd", "PH Phone Accessories Ltd", "Benin Building Supplies Ltd", "VI Table Water Ltd"],
 }
 
 # (bank_code, account_number) -> holder name. Numbers are Luhn-valid and stable.

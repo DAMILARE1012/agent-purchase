@@ -7,7 +7,7 @@ import { formatDateTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { useNow } from "@/lib/useNow";
 import { useGetPurchasesQuery } from "../api";
-import { PurchaseStatusBadge } from "./PurchaseBits";
+import { isSpent, PurchaseStatusBadge } from "./PurchaseBits";
 
 const DAY = 86_400_000;
 
@@ -15,7 +15,7 @@ export function PurchasesList() {
   const { data, error, isLoading } = useGetPurchasesQuery();
   const now = useNow();
   const purchases = data ?? [];
-  const last30 = purchases.filter((p) => now - Date.parse(p.paidAt) <= 30 * DAY);
+  const last30 = purchases.filter((p) => isSpent(p) && now - Date.parse(p.paidAt) <= 30 * DAY);
 
   return (
     <div className="flex flex-col gap-6">

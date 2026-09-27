@@ -13,6 +13,9 @@ import { useAppDispatch } from "@/store/hooks";
 import type { SellerOrder } from "@/types/domain";
 import { useGetMyOrdersQuery, useGetMySellerProfileQuery, useRefundOrderMutation } from "../api";
 
+/** Refunds travel back through the bank with disputes (milestone M12). */
+const REFUNDS_ENABLED = false;
+
 const STATUS: Record<SellerOrder["status"], { label: string; tone: Tone }> = {
   to_fulfil: { label: "To deliver", tone: "crypto" },
   delivered: { label: "Delivered", tone: "neutral" },
@@ -131,8 +134,10 @@ function OrderDialog({ order, onClose }: { order: SellerOrder | null; onClose: (
               }>
                 The money goes back to the shopper by bank transfer, linked to this receipt.
               </Alert>
-            ) : (
+            ) : REFUNDS_ENABLED ? (
               <Button variant="secondary" className="self-start" onClick={() => setConfirm(true)}>Refund this order</Button>
+            ) : (
+              <p className="text-sm text-muted">Refunds arrive with disputes in milestone M12.</p>
             )
           )}
         </div>

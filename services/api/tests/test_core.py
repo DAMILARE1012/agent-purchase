@@ -11,9 +11,10 @@ from app.services.users import primary_role
 
 
 def test_money_formats_minor_units():
-    assert money(25_000) == "$250.00"
-    assert money(123_456_78) == "$123,456.78"
-    assert money(-500) == "-$5.00"
+    assert money(25_000) == "₦250.00"
+    assert money(123_456_78) == "₦123,456.78"
+    assert money(-500) == "-₦5.00"
+    assert money(25_000, "USD") == "$250.00"
 
 
 def test_primary_role_prefers_most_privileged():
@@ -61,3 +62,28 @@ def test_edited_payload_breaks_signature():
 @pytest.mark.parametrize("bad", ["", "hello", "RCPT1.onlytwo", "XXXX1.a.b", "RCPT1.!!!.???"])
 def test_parse_token_rejects_garbage(bad):
     assert signing.parse_token(bad) is None
+
+
+def test_account_names_match_like_a_person_would():
+    from app.services.merchants import names_match
+
+    assert names_match("IKEJA OFFICE HUB LTD", "Ikeja Office Hub Limited")
+    assert names_match("Kano Grains Depot Nig. Ltd", "KANO GRAINS DEPOT NIG LTD")
+    assert not names_match("ADEBAYO MUSA", "Toner King Ventures")
+
+
+def test_cart_signature_uses_canonical_json():
+    import base64
+
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    from app.services.merchants import _signature_ok, canonical_json
+
+    key = Ed25519PrivateKey.generate()
+    b64 = lambda b: base64.urlsafe_b64encode(b).rstrip(b"=").decode()  # noqa: E731
+    public = b64(key.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw))
+    cart = {"totalMinor": 3_850_000, "sellerId": "s_x", "lines": [{"name": "Toner ₦", "qty": 1}]}
+    signature = b64(key.sign(canonical_json(cart)))
+    assert _signature_ok(public, signature, dict(reversed(list(cart.items()))))  # Key order doesn't matter.
+    assert not _signature_ok(public, signature, {**cart, "totalMinor": 3_750_000})

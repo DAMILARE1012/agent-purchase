@@ -42,7 +42,7 @@ def open_wallet(db: Session, user: User) -> Account:
         account_number=new_platform_account_number(db),
         kind="user",
         name=user.display_name,
-        currency="USD",
+        currency=ledger.CURRENCY,
     )
     db.add(account)
     db.flush()
@@ -89,4 +89,4 @@ def provision(db: Session, principal: Principal) -> Viewer:
         user = db.get(User, principal.sub)
         assert user is not None
         account = _wallet_of(db, user.id)
-    return Viewer(user=user, account=account)
+    return Viewer(user=user, account=account, client_id=principal.client_id)

@@ -1,4 +1,4 @@
-import type { AgentRun, Purchase } from "@/types/domain";
+import type { AgentRun, CartApprovalOptions, Purchase } from "@/types/domain";
 import { api } from "@/store/api";
 
 export const runsApi = api.injectEndpoints({
@@ -16,8 +16,13 @@ export const runsApi = api.injectEndpoints({
       query: (body) => ({ url: "runs", method: "POST", body }),
       invalidatesTags: (_r, _e, { mandateId }) => [{ type: "Run", id: "LIST" }, { type: "Mandate", id: mandateId }],
     }),
-    approveCart: build.mutation<Purchase, { cartId: string; runId: string; mandateId: string }>({
-      query: ({ cartId }) => ({ url: `carts/${cartId}/approve`, method: "POST" }),
+    /** A WebAuthn challenge that commits to exactly this seller-signed cart. */
+    cartApprovalOptions: build.mutation<CartApprovalOptions, string>({
+      query: (cartId) => ({ url: `carts/${cartId}/approval-options`, method: "POST" }),
+    }),
+    /** Pays: the gate runs again, then hold, bank transfer and signed receipt. Repeating it returns the same purchase. */
+    approveCart: build.mutation<Purchase, { cartId: string; runId: string; mandateId: string; signature: CartApprovalSignature }>({
+      query: ({ cartId, signature }) => ({ url: `carts/${cartId}/approve`, method: "POST", body: { signature } }),
       invalidatesTags: (_r, _e, { runId, mandateId }) => [
         { type: "Run", id: runId },
         { type: "Run", id: "LIST" },
@@ -34,4 +39,13 @@ export const runsApi = api.injectEndpoints({
   }),
 });
 
-export const { useGetRunsQuery, useGetRunQuery, useStartRunMutation, useApproveCartMutation, useDeclineCartMutation } = runsApi;
+type CartApprovalSignature = { kind: "passkey"; challengeId: string; credential: Record<string, unknown> };
+
+export const {
+  useGetRunsQuery,
+  useGetRunQuery,
+  useStartRunMutation,
+  useCartApprovalOptionsMutation,
+  useApproveCartMutation,
+  useDeclineCartMutation,
+} = runsApi;

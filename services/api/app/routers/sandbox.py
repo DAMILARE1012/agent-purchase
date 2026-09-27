@@ -10,7 +10,7 @@ from app.config import get_settings
 from app.db import get_db
 from app.errors import ApiError
 from app.security import Viewer, require_role, require_viewer, require_wallet
-from app.services import network, scenarios, seed, transfers
+from app.services import network, payments, runs, scenarios, seed, transfers
 
 
 def sandbox_enabled() -> None:
@@ -71,3 +71,27 @@ def simulate_inbound(body: schemas.SimulateInboundIn, viewer: Viewer = Depends(r
         "narration": body.narration,
     })
     return {"sessionId": result["sessionId"], "status": result["status"]}
+
+
+class SandboxCartLine(schemas.Schema):
+    quantity: int = 1
+    sku: str | None = None
+    item_name: str | None = None
+
+
+class SandboxRunIn(schemas.Schema):
+    mandate_id: str
+    seller_id: str
+    lines: list[SandboxCartLine]
+
+
+@router.post("/runs")
+def sandbox_run(body: SandboxRunIn, viewer: Viewer = Depends(require_viewer), db: Session = Depends(get_db)) -> dict:
+    """
+    Test clients only: a seller-signed cart straight through the gate, without the AI, so
+    concurrency and access tests can create many carts on one mandate without model calls.
+    """
+    if not (get_settings().allow_test_signatures and viewer.client_id == "scan-cli"):
+        raise ApiError(403, "forbidden", "Only the sandbox test client can create test carts.")
+    lines = [{"quantity": ln.quantity, **({"sku": ln.sku} if ln.sku else {"itemName": ln.item_name or ""})} for ln in body.lines]
+    return runs.serialize(db, payments.sandbox_run(db, viewer, body.mandate_id, body.seller_id, lines))

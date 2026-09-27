@@ -13,6 +13,7 @@ COPY alembic.ini pyproject.toml ./
 COPY alembic ./alembic
 COPY app ./app
 COPY tests ./tests
+COPY evals ./evals
 COPY entrypoint.sh .
 RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh \
     && useradd --create-home --uid 10001 app

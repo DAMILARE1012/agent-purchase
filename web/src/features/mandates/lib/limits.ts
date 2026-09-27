@@ -42,6 +42,7 @@ export function limitRows(l: MandateLimits, mode: Mandate["mode"]): LimitRow[] {
   if (l.periodCapMinor !== null && l.period) rows.push({ field: "periodCapMinor", label: `Cap per ${l.period}`, value: formatMoney(l.periodCapMinor) });
   rows.push(
     { field: "sellerPolicy", label: "Sellers", value: POLICY_LABEL[l.sellerPolicy] },
+    { field: "deliveryCity", label: "Deliver to", value: l.deliveryCity },
     { field: "deliverBy", label: "Deliver by", value: l.deliverBy ? formatDateTime(l.deliverBy) : "Any date" },
     { field: "maxUses", label: "Can be used", value: l.maxUses === 1 ? "Once" : `Up to ${l.maxUses} times` },
     { field: "expiresAt", label: "Expires", value: formatDateTime(l.expiresAt) },
@@ -63,23 +64,4 @@ export function spendLimit(m: Mandate): { spentMinor: number; limitMinor: number
     return { spentMinor: m.periodSpentMinor ?? 0, limitMinor: m.limits.periodCapMinor, label: `this ${m.limits.period}` };
   }
   return { spentMinor: m.spentMinor, limitMinor: m.limits.maxTotalMinor * m.limits.maxUses, label: m.limits.maxUses > 1 ? "in total" : "limit" };
-}
-
-/** Deterministic JSON (sorted keys) so the same limits always hash the same. */
-export function canonicalJson(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-  if (value && typeof value === "object") {
-    return `{${Object.keys(value as object)
-      .sort()
-      .map((k) => `${JSON.stringify(k)}:${canonicalJson((value as Record<string, unknown>)[k])}`)
-      .join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
-
-/** SHA-256 of the canonical mandate, hex. This is what the passkey signs. */
-export async function mandateHash(mode: Mandate["mode"], limits: MandateLimits): Promise<string> {
-  const bytes = new TextEncoder().encode(canonicalJson({ mode, limits }));
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }

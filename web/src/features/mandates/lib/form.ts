@@ -9,6 +9,7 @@ export function validateLimits(l: MandateLimits, mode: MandateMode, now: number)
   if (!Number.isInteger(l.quantity) || l.quantity < 1) e.quantity = "Quantity must be a whole number, 1 or more.";
   if (l.maxTotalMinor <= 0) e.maxTotalMinor = "Set a maximum. Until you do, nothing can be paid.";
   if (l.maxPerItemMinor !== null && l.maxPerItemMinor > l.maxTotalMinor) e.maxPerItemMinor = "Can't be more than the maximum total.";
+  if (!l.deliveryCity?.trim()) e.deliveryCity = "Say which city to deliver to.";
   if (Date.parse(l.expiresAt) <= now) e.expiresAt = "Must be in the future.";
   if (l.deliverBy && Date.parse(l.deliverBy) <= now) e.deliverBy = "Must be in the future.";
   if (!Number.isInteger(l.maxUses) || l.maxUses < 1 || l.maxUses > 50) e.maxUses = "Between 1 and 50.";

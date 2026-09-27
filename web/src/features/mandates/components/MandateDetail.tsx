@@ -12,6 +12,7 @@ import { useAppDispatch } from "@/store/hooks";
 import { useGetMandateQuery, useRevokeMandateMutation } from "../api";
 import { LimitsTable } from "./LimitsTable";
 import { MandateStatusBadge, ModeBadge, SpendMeter } from "./MandateBits";
+import { SignatureCard } from "./SignatureCard";
 
 export function MandateDetail({ mandateId }: { mandateId: string }) {
   const router = useRouter();
@@ -74,11 +75,7 @@ export function MandateDetail({ mandateId }: { mandateId: string }) {
               <div><dt className="text-muted">{m.status === "revoked" ? "Cancelled" : "Expires"}</dt><dd className="font-semibold">{formatDateTime(m.revokedAt ?? m.limits.expiresAt)}</dd></div>
             </dl>
           </Card>
-          <Card className="flex flex-col gap-2 text-sm">
-            <h2 className="flex items-center gap-2 font-display text-lg font-semibold"><Icon name="key" className="size-5 text-crypto" /> Signature</h2>
-            <p className="text-ink-2">Signed with your passkey on {formatDateTime(m.signedAt)}. The signature covers this hash of the exact limits:</p>
-            <p className="break-all rounded-md bg-surface-2 px-3 py-2 font-mono text-xs">{m.mandateHash}</p>
-          </Card>
+          <SignatureCard mandate={m} />
         </div>
       </div>
 

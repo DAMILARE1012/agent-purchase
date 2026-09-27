@@ -37,7 +37,11 @@ export function RunTimeline({ run }: { run: AgentRun }) {
                 <time dateTime={step.at}>{time.format(new Date(step.at))}</time>
                 {step.untrusted && <Badge>Seller content</Badge>}
                 {step.injectionScore !== null && step.injectionScore >= 0.5 && <Badge tone="ai">Possible hidden instructions</Badge>}
-                {step.model && <span className="font-mono">{step.tokensIn + step.tokensOut} tokens · {(step.latencyMs / 1000).toFixed(1)} s</span>}
+                {step.cached ? (
+                  <span className="font-mono">cached answer</span>
+                ) : (
+                  step.model && <span className="font-mono">{step.tokensIn + step.tokensOut} tokens · {(step.latencyMs / 1000).toFixed(1)} s</span>
+                )}
               </div>
             </div>
           </li>

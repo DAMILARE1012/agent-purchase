@@ -8,11 +8,18 @@ import { errorMessage } from "@/lib/api-error";
 import { formatDateTime } from "@/lib/dates";
 import { DEMO_MODE } from "@/lib/demo";
 import { useAppDispatch } from "@/store/hooks";
-import { useGetMySellerProfileQuery, useRegisterAccountMutation } from "../api";
+import { useGetMySellerProfileQuery, useRegisterAccountMutation, useRemoveAccountMutation } from "../api";
 
 /** Where shoppers' payments go, and why the name on each account matters. */
 export function SellerAccounts() {
+  const dispatch = useAppDispatch();
   const { data: seller, error, isLoading } = useGetMySellerProfileQuery();
+  const [remove, removing] = useRemoveAccountMutation();
+
+  async function removeAccount(bankCode: string, accountNumber: string) {
+    const res = await remove({ bankCode, accountNumber });
+    if ("data" in res) dispatch(notify("Account removed."));
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -33,17 +40,30 @@ export function SellerAccounts() {
               <span className="font-display text-xl font-semibold">{seller.legalName}</span>
               <span className="text-sm text-ink-2">The gate compares this with the bank&apos;s name for the account on every cart.</span>
             </Card>
+            {removing.error && <Alert tone="bad">{errorMessage(removing.error)}</Alert>}
             <ul className="flex flex-col gap-3">
               {seller.accounts.map((a) => (
                 <li key={`${a.bankCode}-${a.accountNumberMasked}`}>
                   <Card className="flex items-center gap-4">
                     <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-surface-2 text-muted"><Icon name="bank" /></span>
                     <div className="flex min-w-0 flex-1 flex-col">
-                      <span className="font-semibold">{a.bankName} {a.accountNumberMasked}</span>
+                      <span className="font-semibold">{a.bankName} {a.accountNumber ?? a.accountNumberMasked}</span>
                       <span className="truncate text-sm text-ink-2">Bank&apos;s name: {a.nameOnAccount}</span>
                       {a.verifiedAt && <span className="text-xs text-muted">Verified {formatDateTime(a.verifiedAt)}</span>}
                     </div>
-                    {a.verifiedAt ? <Badge tone="truth">Can receive</Badge> : <Badge tone="bad">Name doesn&apos;t match</Badge>}
+                    {a.verifiedAt ? (
+                      <Badge tone="truth">Can receive</Badge>
+                    ) : (
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge tone="bad">Name doesn&apos;t match</Badge>
+                        {a.accountNumber && (
+                          <Button size="sm" variant="secondary" loading={removing.isLoading && removing.originalArgs?.accountNumber === a.accountNumber}
+                            onClick={() => removeAccount(a.bankCode, a.accountNumber!)}>
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </Card>
                 </li>
               ))}
@@ -65,9 +85,7 @@ function AddAccount({ legalName }: { legalName: string }) {
 
   async function add() {
     if (lookup.status !== "found") return;
-    const res = await register({
-      bankCode, bankName: lookup.account.bankName, accountNumber, nameOnAccount: lookup.account.accountName,
-    });
+    const res = await register({ bankCode, accountNumber });
     if ("data" in res && res.data) {
       const added = res.data.accounts.at(-1);
       dispatch(notify(added?.verifiedAt ? "Account added. It can receive payments." : "Account added, but it can't receive payments: the name doesn't match.", added?.verifiedAt ? "success" : "error"));

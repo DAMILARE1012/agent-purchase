@@ -327,3 +327,75 @@ class DemoScenarioOut(Schema):
     viewer_user_id: str
     viewer_username: str
     request: ScanIn
+
+
+# ---- Seller directory (M4) -------------------------------------------------------------
+
+SellerTier = Literal["verified", "known", "new", "suspended"]
+
+
+class SellerAccountOut(Schema):
+    bank_code: str
+    bank_name: str
+    account_number_masked: str
+    # Only in the seller's own workspace; staff views see the masked number.
+    account_number: str | None = None
+    name_on_account: str
+    verified_at: datetime | None
+
+
+class SellerOut(Schema):
+    id: str
+    display_name: str
+    legal_name: str
+    tier: SellerTier
+    category: str
+    city: str
+    catalog_kind: Literal["structured", "images", "mixed"]
+    accounts: list[SellerAccountOut]
+    joined_at: datetime
+    adversarial: bool
+
+
+class CatalogItemOut(Schema):
+    sku: str
+    seller_id: str
+    name: str
+    brand: str | None
+    model: str | None
+    category: str
+    pack_size: int
+    unit_price_minor: int
+    in_stock: bool
+    source: Literal["structured", "image"]
+
+
+class RegisterAccountIn(Schema):
+    """The bank decides the account name; anything else the client sends is ignored."""
+
+    bank_code: str
+    account_number: str
+
+
+class SellerTierIn(Schema):
+    tier: SellerTier
+
+
+class CartCheckOut(Schema):
+    rule: str
+    label: str
+    result: Literal["pass", "fail"]
+    detail: str
+
+
+class CartVerificationOut(Schema):
+    valid: bool
+    seller_id: str | None
+    payee_name: str | None
+    checks: list[CartCheckOut]
+
+
+class RegistrySyncOut(Schema):
+    sellers: int
+    accounts: int
+    verified: int

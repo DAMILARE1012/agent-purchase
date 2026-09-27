@@ -62,13 +62,14 @@ scripts/smoke-login.mjs     End-to-end sign-in test for every role (non-destruct
 |---|---|
 | `session` | Current user, sign in / out, `RequireSignIn` guard, role home redirect |
 | `dashboard` | Shopper home: carts waiting, live runs, spending, blocked attempts, activity |
-| `mandates` | New-mandate flow (sentence → Qwen draft → exact limits → passkey), list, detail, cancel |
-| `runs` | AI shopping runs: live timeline, signed cart, gate checks, approve or decline |
-| `purchases` | Purchases, signed receipts with QR, public receipt verification |
+| `mandates` | New-mandate flow (sentence → Qwen draft with the shopper's words behind each value → exact limits → passkey signature), list, detail with signature check, cancel |
+| `passkeys` | Security page: create and remove passkeys; `PasskeyPrompt`, the signing dialog used for mandates and payments (WebAuthn, in `lib/webauthn.ts`) |
+| `runs` | AI shopping runs: live timeline, signed cart, gate checks, approve with a passkey (pays) or decline |
+| `purchases` | Purchases, signed receipts with QR, public receipt verification (real API) |
 | `balance` | The shopper's funding balance (real API) |
 | `sellers` | Seller workspace (orders and refunds, catalog, bank accounts with name checks) and the seller directory |
 | `support` | Blocked carts (names masked) and disputes settled from the evidence |
-| `agentops` | Ops overview, run traces, agent versions, evaluation comparison with the release gate, test-marketplace report |
+| `agentops` | Ops overview, run traces, agent versions, evaluations (real: results, per-case detail and the release gate's verdict from the API), test-marketplace report |
 | `admin` | Users and suspensions (seller tiers use the seller directory) |
 | `ledger` | Platform ledger: trial balance, accounts, journal |
 | `banking` | Banks, account-number input and name enquiry |
@@ -81,10 +82,11 @@ scripts/smoke-login.mjs     End-to-end sign-in test for every role (non-destruct
 `src/store/api.ts` sends each request to `src/mocks/handlers.ts` first when `NEXT_PUBLIC_API_MOCKS` isn't `false`. If a mock route matches, the mock answers (with a short delay). Otherwise the request goes to the real API through the BFF.
 
 - `mocks/data.ts`: sandbox sellers (some dishonest), catalogs, mandates, runs, purchases, agent versions, evaluations and test-marketplace reports.
-- `mocks/gate.ts`: a TypeScript mirror of the gate rules, so mocked carts get realistic allow or deny decisions. It's UI data only, never a security control; the real gate is server-side (M7).
-- `mocks/compile.ts` stands in for Qwen's sentence-to-mandate drafting. `mocks/simulate.ts` stands in for the agent runtime: new runs reveal their steps over a few seconds.
+- `mocks/gate.ts`: a TypeScript mirror of the gate rules, used only to give the mock purchases' seeded runs realistic decisions. The real gate is `services/api/app/services/gate.py`.
 
-When a backend endpoint ships, delete its route from `handlers.ts`.
+When a backend endpoint ships, delete its route from `handlers.ts`. Already real: the seller directory, profile, catalog, bank accounts and tiers (M4); mandates, runs, carts, blocked carts, ops overview, traces and agent versions (M5); passkeys (M6); paying for carts, purchases, receipts and their public check, and seller orders (M7). Still mocked: disputes, evaluations, the test-marketplace report and admin users. The mock disputes refer to mock purchases kept in `mocks/data.ts`.
+
+Live runs: `features/runs/hooks/useRunEvents.ts` follows `GET /api/v1/runs/:id/events` (server-sent events, streamed through the BFF) and writes each update into the RTK Query cache; it falls back to polling if the stream isn't available.
 
 ### State management
 
