@@ -1,0 +1,157 @@
+# Scan-to-Confirm: local stack. All settings come from .env (copy .env.example).
+#   docker compose up --build
+# Web app: ${WEB_PUBLIC_URL}   API docs: http://localhost:${API_PORT}/docs   Keycloak: ${KEYCLOAK_PUBLIC_URL}
+
+name: scan-to-confirm
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is not set, copy .env.example to .env}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is not set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set}
+      # Read by infra/postgres/init/01-keycloak.sh on first start.
+      KEYCLOAK_DB_NAME: ${KEYCLOAK_DB_NAME:?KEYCLOAK_DB_NAME is not set}
+      KEYCLOAK_DB_USER: ${KEYCLOAK_DB_USER:?KEYCLOAK_DB_USER is not set}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?KEYCLOAK_DB_PASSWORD is not set}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${POSTGRES_PORT:?POSTGRES_PORT is not set}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.4
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB_NAME}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:?KEYCLOAK_ADMIN_USER is not set}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD is not set}
+      # Browsers reach Keycloak at KEYCLOAK_PUBLIC_URL; containers reach it at keycloak:8080.
+      # Tokens are always issued for the public URL.
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL:?KEYCLOAK_PUBLIC_URL is not set}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      # Placeholders in infra/keycloak/realm-scan-to-confirm.json are filled from these.
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:?KEYCLOAK_REALM is not set}
+      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:?WEB_PUBLIC_URL is not set}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:?OIDC_CLIENT_ID is not set}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:?OIDC_CLIENT_SECRET is not set}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:?OIDC_AUDIENCE is not set}
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:?DEMO_USER_PASSWORD is not set}
+    volumes:
+      - ./infra/keycloak:/opt/keycloak/data/import:ro
+    ports:
+      - "${KEYCLOAK_PORT:?KEYCLOAK_PORT is not set}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # The image has no curl; talk HTTP to the management port directly.
+      test:
+        - CMD-SHELL
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000 &&
+          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q '200 OK' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  api:
+    build: ./services/api
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      OIDC_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+      OIDC_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE}
+      PUBLIC_WEB_URL: ${WEB_PUBLIC_URL}
+      SANDBOX_MODE: ${SANDBOX_MODE:?SANDBOX_MODE is not set}
+      WELCOME_CREDIT_MINOR: ${WELCOME_CREDIT_MINOR:?WELCOME_CREDIT_MINOR is not set}
+      PAYEE_HASH_SALT: ${PAYEE_HASH_SALT:?PAYEE_HASH_SALT is not set}
+      PLATFORM_BANK_CODE: ${PLATFORM_BANK_CODE:?PLATFORM_BANK_CODE is not set}
+      PLATFORM_BANK_NAME: ${PLATFORM_BANK_NAME:?PLATFORM_BANK_NAME is not set}
+      SWITCH_URL: http://switch:8100
+      SWITCH_API_KEY: ${SWITCH_API_KEY:?SWITCH_API_KEY is not set}
+      SWITCH_WEBHOOK_SECRET: ${SWITCH_WEBHOOK_SECRET:?SWITCH_WEBHOOK_SECRET is not set}
+    ports:
+      - "${API_PORT:?API_PORT is not set}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      switch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # Sandbox inter-bank payment network: fictional banks, name enquiry, transfers, webhooks, settlement.
+  switch:
+    build: ./services/switch
+    environment:
+      SWITCH_API_KEY: ${SWITCH_API_KEY}
+      SWITCH_WEBHOOK_SECRET: ${SWITCH_WEBHOOK_SECRET}
+      PLATFORM_BANK_CODE: ${PLATFORM_BANK_CODE}
+      PLATFORM_BANK_NAME: ${PLATFORM_BANK_NAME}
+      PLATFORM_EVENTS_URL: http://api:8000/v1/network
+      PENDING_SECONDS: ${SWITCH_PENDING_SECONDS:?SWITCH_PENDING_SECONDS is not set}
+      REVERSAL_SECONDS: ${SWITCH_REVERSAL_SECONDS:?SWITCH_REVERSAL_SECONDS is not set}
+    volumes:
+      - switchdata:/data
+    ports:
+      - "${SWITCH_PORT:?SWITCH_PORT is not set}:8100"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/healthz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:?NEXT_PUBLIC_DEMO_MODE is not set}
+        NEXT_PUBLIC_DEMO_PASSWORD: ${DEMO_USER_PASSWORD}
+    environment:
+      APP_URL: ${WEB_PUBLIC_URL}
+      API_INTERNAL_URL: http://api:8000
+      REDIS_URL: redis://redis:6379
+      OIDC_BROWSER_BASE_URL: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+      OIDC_INTERNAL_BASE_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+    ports:
+      - "${WEB_PORT:?WEB_PORT is not set}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  switchdata:

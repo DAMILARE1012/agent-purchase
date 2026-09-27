@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+/* Design tokens. Semantic colours follow the system design:
+   truth = ledger / money confirmed, crypto = signatures,
+   ai = model output and warnings, bad = failed checks. */
+:root {
+  --canvas: #f3f4f7;
+  --surface: #ffffff;
+  --surface-2: #eceef3;
+  --ink: #161a26;
+  --ink-2: #3b4150;
+  --muted: #5e6577;
+  --line: #d6d9e1;
+  --line-strong: #aeb3c0;
+  --truth: #18794e;
+  --truth-bg: #e1f2e9;
+  --crypto: #3f46b8;
+  --crypto-bg: #e8e9fa;
+  --ai: #a35c00;
+  --ai-bg: #fbeedb;
+  --bad: #b42318;
+  --bad-bg: #fbe7e5;
+  /* Chart series, validated for colour-vision deficiency against each theme's surface. */
+  --chart-in: #18794e;
+  --chart-out: #3f46b8;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #0e1017;
+    --surface: #161923;
+    --surface-2: #1d212d;
+    --ink: #e5e8f0;
+    --ink-2: #bcc2d0;
+    --muted: #9097a8;
+    --line: #292e3b;
+    --line-strong: #454c5e;
+    --truth: #4cc38a;
+    --truth-bg: #11291e;
+    --crypto: #9ca2f5;
+    --crypto-bg: #1e2146;
+    --ai: #e6a24e;
+    --ai-bg: #33240c;
+    --bad: #f07a70;
+    --bad-bg: #3a1714;
+    --chart-in: #35a372;
+    --chart-out: #7f86ea;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-truth: var(--truth);
+  --color-truth-bg: var(--truth-bg);
+  --color-crypto: var(--crypto);
+  --color-crypto-bg: var(--crypto-bg);
+  --color-ai: var(--ai);
+  --color-ai-bg: var(--ai-bg);
+  --color-bad: var(--bad);
+  --color-bad-bg: var(--bad-bg);
+  --color-chart-in: var(--chart-in);
+  --color-chart-out: var(--chart-out);
+
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-code), ui-monospace, monospace;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--crypto);
+  outline-offset: 2px;
+}
+
+dialog::backdrop {
+  background: rgb(10 12 20 / 0.55);
+}
+
+/* ---- Landing page ---------------------------------------------------------- */
+
+.bg-dots {
+  background-image: radial-gradient(var(--line-strong) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+@keyframes scan-line {
+  0%, 100% { transform: translateY(0); opacity: 0.9; }
+  50% { transform: translateY(var(--scan-distance, 150px)); opacity: 1; }
+}
+
+.animate-scan {
+  animation: scan-line 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-scan { animation: none; }
+}

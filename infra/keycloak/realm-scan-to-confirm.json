@@ -1,0 +1,154 @@
+{
+  "realm": "${KEYCLOAK_REALM}",
+  "displayName": "Scan-to-Confirm",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "rememberMe": true,
+  "resetPasswordAllowed": false,
+  "verifyEmail": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      { "name": "member", "description": "Wallet user who can send and receive money" },
+      { "name": "merchant", "description": "Business payee" },
+      { "name": "analyst", "description": "Risk analyst: reviews holds, suspicious receipts and disputes" },
+      { "name": "ops", "description": "Platform finance: views the platform ledger" }
+    ]
+  },
+  "defaultRole": {
+    "name": "default-roles-${KEYCLOAK_REALM}",
+    "composite": true,
+    "composites": { "realm": ["offline_access", "uma_authorization", "member"] }
+  },
+  "clients": [
+    {
+      "clientId": "${OIDC_CLIENT_ID}",
+      "name": "Scan-to-Confirm web app",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${OIDC_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["${WEB_PUBLIC_URL}/auth/callback"],
+      "webOrigins": ["${WEB_PUBLIC_URL}"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${WEB_PUBLIC_URL}/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "scan-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "${OIDC_AUDIENCE}",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "scan-cli",
+      "name": "Development and test client (password grant). Do not enable in production.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "protocolMappers": [
+        {
+          "name": "scan-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "${OIDC_AUDIENCE}",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "0b4a8f0e-5c1a-4c1e-9a53-1d1f00000001",
+      "username": "sam",
+      "email": "sam@example.com",
+      "emailVerified": true,
+      "firstName": "Sam",
+      "lastName": "Carter",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${DEMO_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["default-roles-${KEYCLOAK_REALM}", "member"]
+    },
+    {
+      "id": "0b4a8f0e-5c1a-4c1e-9a53-1d1f00000002",
+      "username": "rita",
+      "email": "rita@example.com",
+      "emailVerified": true,
+      "firstName": "Rita",
+      "lastName": "Alvarez",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${DEMO_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["default-roles-${KEYCLOAK_REALM}", "member"]
+    },
+    {
+      "id": "0b4a8f0e-5c1a-4c1e-9a53-1d1f00000003",
+      "username": "ada",
+      "email": "ada@example.com",
+      "emailVerified": true,
+      "firstName": "Ada",
+      "lastName": "Okoro",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${DEMO_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["default-roles-${KEYCLOAK_REALM}", "member", "merchant"]
+    },
+    {
+      "id": "0b4a8f0e-5c1a-4c1e-9a53-1d1f00000004",
+      "username": "jordan",
+      "email": "jordan@example.com",
+      "emailVerified": true,
+      "firstName": "Jordan",
+      "lastName": "Price",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${DEMO_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["default-roles-${KEYCLOAK_REALM}", "member"]
+    },
+    {
+      "id": "0b4a8f0e-5c1a-4c1e-9a53-1d1f00000005",
+      "username": "morgan",
+      "email": "morgan@example.com",
+      "emailVerified": true,
+      "firstName": "Morgan",
+      "lastName": "Lee",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${DEMO_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["default-roles-${KEYCLOAK_REALM}", "analyst"]
+    },
+    {
+      "id": "0b4a8f0e-5c1a-4c1e-9a53-1d1f00000006",
+      "username": "olivia",
+      "email": "olivia@example.com",
+      "emailVerified": true,
+      "firstName": "Olivia",
+      "lastName": "Grant",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${DEMO_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["default-roles-${KEYCLOAK_REALM}", "ops"]
+    }
+  ]
+}
