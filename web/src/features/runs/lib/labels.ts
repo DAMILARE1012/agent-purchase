@@ -1,5 +1,5 @@
 import type { IconName, Tone } from "@/components/ui";
-import type { AgentRun, GateOutcome, RunStatus, StepKind } from "@/types/domain";
+import type { AgentRun, GateOutcome, GateRule, RunStatus, StepKind } from "@/types/domain";
 
 export const RUN_STATUS: Record<RunStatus, { label: string; tone: Tone }> = {
   queued: { label: "Queued", tone: "neutral" },
@@ -32,3 +32,19 @@ export const OUTCOME: Record<GateOutcome, { label: string; tone: Tone }> = {
 };
 
 export const isActiveRun = (r: Pick<AgentRun, "status">) => r.status === "queued" || r.status === "running" || r.status === "paying";
+
+/** Short names for a failed rule, for tables and filters. */
+export const RULE_FAILED: Record<GateRule, string> = {
+  mandate_valid: "Mandate invalid",
+  cart_signed: "Cart not signed",
+  seller_allowed: "Seller not allowed",
+  arithmetic: "Prices don't add up",
+  within_limits: "Over the limit",
+  item_matches: "Wrong item",
+  delivery_date: "Arrives too late",
+  payee_verified: "Wrong account",
+  period_cap: "Over the spending cap",
+  soft_new_seller: "New seller",
+  soft_price_outlier: "Unusual price",
+  soft_tight_delivery: "Tight delivery",
+};

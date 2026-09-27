@@ -1,4 +1,4 @@
-import type { CatalogItem, Seller, SellerOrder, SellerTier } from "@/types/domain";
+import type { CatalogItem, RegisterAccountRequest, Seller, SellerOrder, SellerTier } from "@/types/domain";
 import { api } from "@/store/api";
 
 export const sellersApi = api.injectEndpoints({
@@ -27,6 +27,15 @@ export const sellersApi = api.injectEndpoints({
       query: () => "seller/orders",
       providesTags: [{ type: "Purchase", id: "LIST" }],
     }),
+    refundOrder: build.mutation<SellerOrder, string>({
+      query: (orderId) => ({ url: `seller/orders/${orderId}/refund`, method: "POST" }),
+      invalidatesTags: [{ type: "Purchase", id: "LIST" }],
+    }),
+    /** Registers a settlement account; verified only if the bank's name matches the seller's legal name. */
+    registerAccount: build.mutation<Seller, RegisterAccountRequest>({
+      query: (body) => ({ url: "seller/accounts", method: "POST", body }),
+      invalidatesTags: [{ type: "Seller", id: "ME" }, { type: "Seller", id: "LIST" }],
+    }),
     setSellerTier: build.mutation<Seller, { id: string; tier: SellerTier }>({
       query: ({ id, tier }) => ({ url: `admin/sellers/${id}/tier`, method: "POST", body: { tier } }),
       invalidatesTags: (_r, _e, { id }) => [{ type: "Seller", id }, { type: "Seller", id: "LIST" }],
@@ -41,5 +50,7 @@ export const {
   useGetMySellerProfileQuery,
   useGetMyCatalogQuery,
   useGetMyOrdersQuery,
+  useRefundOrderMutation,
+  useRegisterAccountMutation,
   useSetSellerTierMutation,
 } = sellersApi;

@@ -9,11 +9,14 @@ BANKS: dict[str, str] = {
     "104": "Northwind Savings",
 }
 
+# New holders go at the end of a bank's list: numbers are derived from the position,
+# so existing accounts keep their numbers. From the 4th entry on, these are the
+# Mandate Gate sandbox sellers' settlement accounts (and one scammer's).
 _HOLDERS: dict[str, list[str]] = {
-    "101": ["Maya Chen", "Daniel Osei", "Lena Fischer"],
-    "102": ["Leo Martins", "Amara Obi", "Hannah Wright"],
-    "103": ["Priya Nair", "Tomás Rivera", "Grace Mensah"],
-    "104": ["Owen Brooks", "Sofia Rossi", "Kwame Asante"],
+    "101": ["Maya Chen", "Daniel Osei", "Lena Fischer", "Ikeja Office Hub Ltd", "Lekki Gadget Hub Ltd"],
+    "102": ["Leo Martins", "Amara Obi", "Hannah Wright", "PrintPoint Enterprises", "IOH Official Stores"],
+    "103": ["Priya Nair", "Tomás Rivera", "Grace Mensah", "Ada Okoro Enterprises", "Cheap Deals Warehouse"],
+    "104": ["Owen Brooks", "Sofia Rossi", "Kwame Asante", "QuickData Nigeria Ltd", "Adebayo Musa"],
 }
 
 # (bank_code, account_number) -> holder name. Numbers are Luhn-valid and stable.

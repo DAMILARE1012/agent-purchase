@@ -61,18 +61,20 @@ scripts/smoke-login.mjs     End-to-end sign-in test for every role (non-destruct
 | Feature | What it does |
 |---|---|
 | `session` | Current user, sign in / out, `RequireSignIn` guard, role home redirect |
-| `mandates` | Draft (Qwen), sign, list and cancel mandates |
-| `runs` | AI shopping runs: start, follow live, approve or decline the cart |
-| `purchases` | Purchases and signed receipts; public receipt verification |
-| `sellers` | Seller directory, the seller's own catalog, orders and accounts; admin tiers |
-| `support` | Blocked carts and disputes |
-| `agentops` | Ops overview, run traces, agent versions, evaluations, test-marketplace reports |
+| `dashboard` | Shopper home: carts waiting, live runs, spending, blocked attempts, activity |
+| `mandates` | New-mandate flow (sentence → Qwen draft → exact limits → passkey), list, detail, cancel |
+| `runs` | AI shopping runs: live timeline, signed cart, gate checks, approve or decline |
+| `purchases` | Purchases, signed receipts with QR, public receipt verification |
+| `balance` | The shopper's funding balance (real API) |
+| `sellers` | Seller workspace (orders and refunds, catalog, bank accounts with name checks) and the seller directory |
+| `support` | Blocked carts (names masked) and disputes settled from the evidence |
+| `agentops` | Ops overview, run traces, agent versions, evaluation comparison with the release gate, test-marketplace report |
+| `admin` | Users and suspensions (seller tiers use the seller directory) |
 | `ledger` | Platform ledger: trial balance, accounts, journal |
-| `banking` | Banks, account-number input and name enquiry (for sellers' bank accounts) |
+| `banking` | Banks, account-number input and name enquiry |
 | `receipts` | QR code rendering |
-| `marketing` | Landing page (rewritten in M2) |
+| `marketing` | Landing page |
 | `notifications` | Toasts |
-| `previews` | M1 placeholders' live data reads; removed as M2 and M3 build the real screens |
 
 ### Mock API
 

@@ -1,21 +1,8 @@
 import type { Metadata } from "next";
-import { PlannedPage } from "@/components/layout/PlannedPage";
-import { SellersPreview } from "@/features/previews/StaffPreviews";
+import { SellerDirectory } from "@/features/sellers";
 
 export const metadata: Metadata = { title: "Sellers" };
 
-export default function AdminSellersPage() {
-  return (
-    <PlannedPage
-      title="Sellers"
-      description="Verify sellers, set tiers and suspend."
-      milestone="M3"
-      planned={[
-        "Seller directory with tiers",
-        "Verification of legal names and bank accounts",
-        "Suspensions",
-      ]}
-      preview={<SellersPreview />}
-    />
-  );
+export default function AdminPage() {
+  return <SellerDirectory canManage />;
 }

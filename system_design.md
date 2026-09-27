@@ -194,15 +194,15 @@ We build the **UI first**, on realistic mock data, so every screen can be seen a
 **Done when:** every step of the toner example can be clicked through end to end on mock data, including a blocked cart.
 
 ### M3 · Seller, support, ops and admin UI (mock data)
-- [ ] Seller: catalog, bank accounts, orders, refunds, receipt verification
-- [ ] Support analyst: blocked carts, disputes, masked traces
-- [ ] Admin: seller verification and tiers, suspensions
-- [ ] Ops: agent versions (prompts, model, settings, changelog)
-- [ ] Run traces: every model call and tool call with tokens, time and cost
-- [ ] Gate decisions: blocked carts by rule
-- [ ] Evaluation results and model comparison
-- [ ] Test marketplace report: fooled rate per attack type; money-out-wrongly count
-- [ ] Cost and latency overview
+- [x] Seller: catalog, bank accounts, orders, refunds, receipt verification
+- [x] Support analyst: blocked carts, disputes, masked traces
+- [x] Admin: seller verification and tiers, suspensions
+- [x] Ops: agent versions (prompts, model, settings, changelog)
+- [x] Run traces: every model call and tool call with tokens, time and cost
+- [x] Gate decisions: blocked carts by rule
+- [x] Evaluation results and model comparison
+- [x] Test marketplace report: fooled rate per attack type; money-out-wrongly count
+- [x] Cost and latency overview
 
 **Done when:** each role signs in to its own workspace; an engineer can see why a mock run was blocked and compare two agent versions.
 

@@ -110,6 +110,8 @@ export const DEMO_USER: Record<StaffRole, { username: string; label: string }> =
 const TITLES: Array<[prefix: string, title: string]> = [
   ...Object.values(NAV).flatMap((sections) => sections.flatMap((s) => s.items.map((i): [string, string] => [i.href, i.label]))),
   ["/shop/mandates/new", "New mandate"],
+  ["/support/runs", "Run trace"],
+  ["/shop/purchases", "Purchases"],
   ["/verify", "Verify a receipt"],
   ["/signin-error", "Sign in"],
 ];

@@ -15,7 +15,7 @@ interface Context {
   periodSpentMinor?: number;
 }
 
-const normalizeName = (name: string) =>
+export const normalizeName = (name: string) =>
   name.toUpperCase().replace(/[^A-Z0-9 ]/g, "").replace(/\bLIMITED\b/g, "LTD").replace(/\s+/g, " ").trim();
 
 const median = (values: number[]) => {

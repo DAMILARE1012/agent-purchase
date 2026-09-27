@@ -3,6 +3,7 @@
 // Everything here is fictional. Times are relative to when the page loads.
 
 import type {
+  AdminUser,
   AgentRun,
   AgentVersion,
   CatalogItem,
@@ -41,43 +42,43 @@ export const sellers: Seller[] = [
   {
     id: "s_ikeja_office", displayName: "Ikeja Office Hub", legalName: "Ikeja Office Hub Ltd", tier: "verified",
     category: "Office supplies", city: "Lagos", catalogKind: "mixed", joinedAt: ago(60 * 24 * 210), adversarial: false,
-    accounts: [{ bankCode: "101", bankName: "Aurora Bank", accountNumberMasked: "•••• 4821", nameOnAccount: "IKEJA OFFICE HUB LTD", verifiedAt: ago(60 * 24 * 200) }],
+    accounts: [{ bankCode: "101", bankName: "Aurora Bank", accountNumberMasked: "•••• 0048", nameOnAccount: "IKEJA OFFICE HUB LTD", verifiedAt: ago(60 * 24 * 200) }],
   },
   {
     id: "s_printpoint", displayName: "PrintPoint Yaba", legalName: "PrintPoint Enterprises", tier: "known",
     category: "Office supplies", city: "Lagos", catalogKind: "images", joinedAt: ago(60 * 24 * 95), adversarial: false,
-    accounts: [{ bankCode: "102", bankName: "Harbor Trust Bank", accountNumberMasked: "•••• 1177", nameOnAccount: "PRINTPOINT ENTERPRISES", verifiedAt: ago(60 * 24 * 90) }],
+    accounts: [{ bankCode: "102", bankName: "Harbor Trust Bank", accountNumberMasked: "•••• 0046", nameOnAccount: "PRINTPOINT ENTERPRISES", verifiedAt: ago(60 * 24 * 90) }],
   },
   {
     id: "s_ada_provisions", displayName: "Ada's Provisions", legalName: "Ada Okoro Enterprises", tier: "known",
     category: "Groceries", city: "Lagos", catalogKind: "images", joinedAt: ago(60 * 24 * 150), adversarial: false,
-    accounts: [{ bankCode: "103", bankName: "Meridian Bank", accountNumberMasked: "•••• 3090", nameOnAccount: "ADA OKORO ENTERPRISES", verifiedAt: ago(60 * 24 * 148) }],
+    accounts: [{ bankCode: "103", bankName: "Meridian Bank", accountNumberMasked: "•••• 0044", nameOnAccount: "ADA OKORO ENTERPRISES", verifiedAt: ago(60 * 24 * 148) }],
   },
   {
     id: "s_quickdata", displayName: "QuickData NG", legalName: "QuickData Nigeria Ltd", tier: "verified",
     category: "Airtime and data", city: "Abuja", catalogKind: "structured", joinedAt: ago(60 * 24 * 400), adversarial: false,
-    accounts: [{ bankCode: "104", bankName: "Northwind Savings", accountNumberMasked: "•••• 5512", nameOnAccount: "QUICKDATA NIGERIA LTD", verifiedAt: ago(60 * 24 * 398) }],
+    accounts: [{ bankCode: "104", bankName: "Northwind Savings", accountNumberMasked: "•••• 0042", nameOnAccount: "QUICKDATA NIGERIA LTD", verifiedAt: ago(60 * 24 * 398) }],
   },
   {
     id: "s_lekki_gadgets", displayName: "Lekki Gadget Hub", legalName: "Lekki Gadget Hub Ltd", tier: "verified",
     category: "Electronics accessories", city: "Lagos", catalogKind: "structured", joinedAt: ago(60 * 24 * 320), adversarial: false,
-    accounts: [{ bankCode: "101", bankName: "Aurora Bank", accountNumberMasked: "•••• 7703", nameOnAccount: "LEKKI GADGET HUB LTD", verifiedAt: ago(60 * 24 * 318) }],
+    accounts: [{ bankCode: "101", bankName: "Aurora Bank", accountNumberMasked: "•••• 0055", nameOnAccount: "LEKKI GADGET HUB LTD", verifiedAt: ago(60 * 24 * 318) }],
   },
   {
     id: "s_toner_king", displayName: "Toner King Official Store", legalName: "Toner King Ventures", tier: "new",
     category: "Office supplies", city: "Lagos", catalogKind: "structured", joinedAt: ago(60 * 24 * 6), adversarial: true,
     // Payee substitution: the settlement account belongs to someone else.
-    accounts: [{ bankCode: "104", bankName: "Northwind Savings", accountNumberMasked: "•••• 0457", nameOnAccount: "ADEBAYO MUSA", verifiedAt: null }],
+    accounts: [{ bankCode: "104", bankName: "Northwind Savings", accountNumberMasked: "•••• 0059", nameOnAccount: "ADEBAYO MUSA", verifiedAt: null }],
   },
   {
     id: "s_ikeja_official", displayName: "Ikeja Office Hub Official", legalName: "IOH Official Stores", tier: "new",
     category: "Office supplies", city: "Lagos", catalogKind: "images", joinedAt: ago(60 * 24 * 3), adversarial: true,
-    accounts: [{ bankCode: "102", bankName: "Harbor Trust Bank", accountNumberMasked: "•••• 8864", nameOnAccount: "IOH OFFICIAL STORES", verifiedAt: null }],
+    accounts: [{ bankCode: "102", bankName: "Harbor Trust Bank", accountNumberMasked: "•••• 0053", nameOnAccount: "IOH OFFICIAL STORES", verifiedAt: null }],
   },
   {
     id: "s_cheap_deals", displayName: "Cheap Deals Warehouse", legalName: "Cheap Deals Warehouse", tier: "new",
     category: "General", city: "Onitsha", catalogKind: "mixed", joinedAt: ago(60 * 24 * 12), adversarial: true,
-    accounts: [{ bankCode: "103", bankName: "Meridian Bank", accountNumberMasked: "•••• 2248", nameOnAccount: "CHEAP DEALS WAREHOUSE", verifiedAt: ago(60 * 24 * 11) }],
+    accounts: [{ bankCode: "103", bankName: "Meridian Bank", accountNumberMasked: "•••• 0051", nameOnAccount: "CHEAP DEALS WAREHOUSE", verifiedAt: ago(60 * 24 * 11) }],
   },
 ];
 
@@ -224,7 +225,7 @@ const groceriesSteps = [
   step(60 * 24 * 5 - 4, "request_cart", "Asked Ada's Provisions for a cart with 3 items, delivery to Surulere", { sellerId: "s_ada_provisions", untrusted: true }),
   step(60 * 24 * 5 - 5, "propose_cart", "Proposed the cart: ₦105,700 + ₦3,000 delivery = ₦108,700"),
   step(60 * 24 * 5 - 5, "gate", "Gate allowed the cart: every check passed"),
-  step(60 * 24 * 5 - 7, "payment", "Paid ₦108,700 to ADA OKORO ENTERPRISES (Meridian Bank •••• 3090)"),
+  step(60 * 24 * 5 - 7, "payment", "Paid ₦108,700 to ADA OKORO ENTERPRISES (Meridian Bank •••• 0044)"),
 ];
 
 const dataSteps = (minutesAgo: number) => [
@@ -232,7 +233,7 @@ const dataSteps = (minutesAgo: number) => [
   step(minutesAgo, "request_cart", "Asked QuickData NG for a cart: 1 × MTN 10GB", { sellerId: "s_quickdata", untrusted: true }),
   step(minutesAgo, "propose_cart", "Proposed the cart: ₦4,500"),
   step(minutesAgo, "gate", "Gate allowed the cart within the weekly cap (shopper not present)"),
-  step(minutesAgo, "payment", "Paid ₦4,500 to QUICKDATA NIGERIA LTD (Northwind Savings •••• 5512)"),
+  step(minutesAgo, "payment", "Paid ₦4,500 to QUICKDATA NIGERIA LTD (Northwind Savings •••• 0042)"),
 ];
 
 const paperSteps = [
@@ -333,6 +334,40 @@ export function seedRuns(decide: (m: Mandate, c: NonNullable<AgentRun["cart"]>, 
     });
   });
 
+  // Other shoppers' paid orders, so sellers have an order book.
+  const otherPaid: Array<[id: string, shopper: string, sellerId: string, lines: Array<[string, number]>, delivery: number, minutesAgo: number]> = [
+    ["rita_tomato", "Rita Alvarez", "s_ada_provisions", [["ADA-TOM-TIN", 1]], 2_000, 60 * 24 * 3],
+    ["jordan_rice", "Jordan Price", "s_ada_provisions", [["ADA-RICE-50", 1], ["ADA-OIL-5L", 2]], 3_000, 60 * 6],
+    ["rita_paper", "Rita Alvarez", "s_ikeja_office", [["IOH-A4-80G", 5]], 1_500, 60 * 30],
+  ];
+  for (const [id, shopper, sellerId, lines, delivery, minutesAgo] of otherPaid) {
+    const c = cart(`c_${id}`, sellerId, lines, delivery, ahead(60 * 24 - minutesAgo));
+    const steps = [
+      step(minutesAgo + 3, "search_catalog", "Searched sellers"),
+      step(minutesAgo + 2, "request_cart", `Asked ${seller(sellerId).displayName} for a cart`, { sellerId, untrusted: true, injectionScore: 0.01 }),
+      step(minutesAgo + 2, "propose_cart", "Proposed the cart"),
+      step(minutesAgo + 2, "gate", "Gate allowed the cart: every check passed"),
+      step(minutesAgo, "payment", `Paid ${c.payee.nameOnAccount}`),
+    ];
+    const base = m("m_groceries");
+    const mandate = {
+      ...base, id: `m_${id}`, status: "active" as const, uses: 0, spentMinor: 0,
+      limits: { ...base.limits, item: c.lines[0].name, category: null, maxTotalMinor: 20_000_000, deliverBy: null, expiresAt: ahead(60) },
+    };
+    runs.push({
+      id: `r_${id}`, mandateId: `m_${id}`, shopperName: shopper, status: "paid", agentVersion: LIVE_VERSION,
+      startedAt: ago(minutesAgo + 3), endedAt: ago(minutesAgo), queuePosition: null, steps, cart: c,
+      decision: decide(mandate, c, ago(minutesAgo + 2)),
+      purchaseId: `p_${id}`, totals: totals(steps), outcomeNote: null,
+    });
+    purchases.push({
+      id: `p_${id}`, runId: `r_${id}`, mandateId: `m_${id}`, shopperName: shopper, sellerId, sellerName: seller(sellerId).displayName,
+      summary: c.lines.map((l) => (l.quantity > 1 ? `${l.quantity} × ${l.name}` : l.name)).join(", "), totalMinor: c.totalMinor,
+      status: "paid", paidAt: ago(minutesAgo), payee: c.payee,
+      receipt: receiptFor(`p_${id}`, hash(`m_${id}`), c.id, `1000042609${String(minutesAgo).padStart(6, "0")}00000000000000`, ago(minutesAgo)),
+    });
+  }
+
   // Other shoppers' blocked runs, for the support queue.
   const otherBlocked: Array<[id: string, shopper: string, sellerId: string, sku: string, naira: number, minutesAgo: number, note: string]> = [
     ["r_rita_1", "Rita Alvarez", "s_cheap_deals", "CDW-TNR-COMP", 1_500, 95, "The cart swapped in a compatible toner, not HP 107A."],
@@ -361,7 +396,25 @@ export const disputes: Dispute[] = [
   {
     id: "d_1", purchaseId: "p_data_2", shopperName: SHOPPER, sellerName: "QuickData NG",
     reason: "The 10GB bundle never arrived on my line", status: "open", openedAt: ago(60 * 24 * 12),
+    resolution: null, resolvedAt: null,
   },
+  {
+    id: "d_2", purchaseId: "p_rita_tomato", shopperName: "Rita Alvarez", sellerName: "Ada's Provisions",
+    reason: "Two tins in the carton were dented", status: "resolved", openedAt: ago(60 * 24 * 2),
+    resolution: "rejected", resolvedAt: ago(60 * 24 * 1),
+  },
+];
+
+// ---- Admin -------------------------------------------------------------------------
+
+export const users: AdminUser[] = [
+  { id: "u_sam", username: "sam", displayName: "Sam Carter", role: "shopper", status: "active", joinedAt: ago(60 * 24 * 300), lastSeenAt: ago(3) },
+  { id: "u_rita", username: "rita", displayName: "Rita Alvarez", role: "shopper", status: "active", joinedAt: ago(60 * 24 * 280), lastSeenAt: ago(60 * 5) },
+  { id: "u_jordan", username: "jordan", displayName: "Jordan Price", role: "shopper", status: "active", joinedAt: ago(60 * 24 * 2), lastSeenAt: ago(60 * 3) },
+  { id: "u_ada", username: "ada", displayName: "Ada Okoro", role: "seller", status: "active", joinedAt: ago(60 * 24 * 150), lastSeenAt: ago(60 * 26) },
+  { id: "u_morgan", username: "morgan", displayName: "Morgan Lee", role: "analyst", status: "active", joinedAt: ago(60 * 24 * 400), lastSeenAt: ago(40) },
+  { id: "u_olivia", username: "olivia", displayName: "Olivia Grant", role: "ops", status: "active", joinedAt: ago(60 * 24 * 400), lastSeenAt: ago(12) },
+  { id: "u_kemi", username: "kemi", displayName: "Kemi Adeyemi", role: "admin", status: "active", joinedAt: ago(60 * 24 * 1), lastSeenAt: ago(1) },
 ];
 
 // ---- Ops ----------------------------------------------------------------------------

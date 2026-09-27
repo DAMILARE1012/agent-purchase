@@ -72,8 +72,12 @@ def provision(db: Session, principal: Principal) -> Viewer:
             )
             db.add(user)
             db.flush()
-        elif user.role != role:
-            user.role = role  # Keycloak is the source of truth for roles.
+        else:
+            # Keycloak is the source of truth for roles and names.
+            if user.role != role:
+                user.role = role
+            if principal.name and user.display_name != principal.name:
+                user.display_name = principal.name
 
         account = _wallet_of(db, user.id)
         if account is None and role in WALLET_ROLES:

@@ -1,4 +1,4 @@
-import type { BlockedCart, Dispute } from "@/types/domain";
+import type { BlockedCart, Dispute, ResolveDisputeRequest } from "@/types/domain";
 import { api } from "@/store/api";
 
 export const supportApi = api.injectEndpoints({
@@ -11,7 +11,11 @@ export const supportApi = api.injectEndpoints({
       query: () => "support/disputes",
       providesTags: [{ type: "Support", id: "DISPUTES" }],
     }),
+    resolveDispute: build.mutation<Dispute, { id: string } & ResolveDisputeRequest>({
+      query: ({ id, ...body }) => ({ url: `support/disputes/${id}/resolve`, method: "POST", body }),
+      invalidatesTags: [{ type: "Support", id: "DISPUTES" }, { type: "Purchase", id: "LIST" }],
+    }),
   }),
 });
 
-export const { useGetBlockedCartsQuery, useGetDisputesQuery } = supportApi;
+export const { useGetBlockedCartsQuery, useGetDisputesQuery, useResolveDisputeMutation } = supportApi;

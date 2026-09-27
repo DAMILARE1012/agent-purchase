@@ -280,6 +280,8 @@ export interface ReceiptVerification {
 export interface SellerOrder {
   id: string;
   purchaseId: string;
+  /** The purchase receipt, so the seller can check it before shipping. */
+  receiptToken: string;
   shopperName: string;
   summary: string;
   totalMinor: number;
@@ -309,6 +311,32 @@ export interface Dispute {
   reason: string;
   status: "open" | "resolved";
   openedAt: string;
+  resolution: "refunded" | "rejected" | null;
+  resolvedAt: string | null;
+}
+
+export interface ResolveDisputeRequest {
+  outcome: "refunded" | "rejected";
+}
+
+export interface RegisterAccountRequest {
+  bankCode: string;
+  bankName: string;
+  accountNumber: string;
+  /** From the bank's name enquiry, not typed by the seller. */
+  nameOnAccount: string;
+}
+
+// ---- Admin ----------------------------------------------------------------------
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  displayName: string;
+  role: "shopper" | "seller" | "analyst" | "ops" | "admin";
+  status: "active" | "suspended";
+  joinedAt: string;
+  lastSeenAt: string;
 }
 
 // ---- Ops: agent versions, evaluation, test marketplace --------------------------

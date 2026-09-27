@@ -4,7 +4,7 @@ Lets an AI assistant buy things for you with your bank account, without being ab
 
 You sign a **mandate**: exact limits such as the item, maximum total, allowed sellers and a delivery deadline. A Qwen-based shopping agent finds and proposes a cart, and a rule-based **gate** outside the AI decides whether money can move. The gate checks the cart against your mandate, and checks with the bank that the account being paid really belongs to the seller. Payments are bank transfers, which can't be undone, so the check happens before the money leaves. The design and milestones are in [`system_design.md`](system_design.md).
 
-> **Status: M2 (shopper UI).** The shopper's screens work end to end on mock data: sign a mandate from a sentence, watch the AI shop, see the gate's checks, approve and pay, and verify the signed receipt. Seller, support, ops and admin screens are placeholders until M3; the real AI shopper, gate and payments come in M4–M7. The previous product (Scan-to-Confirm, a wallet with signed QR receipts) is in git history, and its designs are in `docs/archive/`.
+> **Status: M3 (all workspaces on mock data).** Every role's screens work on mock data: shoppers sign mandates and approve carts; sellers see orders, refunds, catalogs and bank accounts (checked by real name enquiry); support reviews blocked carts and disputes; ops reads traces, compares agent versions against the release gate and reads the test-marketplace report; admins manage sellers and users. The real test marketplace, AI shopper, gate and payments come in M4–M7. The previous product (Scan-to-Confirm, a wallet with signed QR receipts) is in git history, and its designs are in `docs/archive/`.
 
 ## Run it
 

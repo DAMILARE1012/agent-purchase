@@ -4,6 +4,7 @@
 
 import type { FetchArgs } from "@reduxjs/toolkit/query";
 import type {
+  AdminUser,
   AgentRun,
   BlockedCart,
   CreateMandateRequest,
@@ -12,6 +13,8 @@ import type {
   OpsOverview,
   Purchase,
   ReceiptVerification,
+  RegisterAccountRequest,
+  ResolveDisputeRequest,
   SellerOrder,
   SellerTier,
 } from "@/types/domain";
@@ -19,9 +22,9 @@ import { formatMoney } from "@/lib/money";
 import { compileDraft } from "./compile";
 import {
   agentVersions, DEMO_SELLER_ID, disputes, evalResults, fakeHash, LIVE_VERSION, mandates, purchases,
-  rangeReports, receiptFor, runs, seedRuns, sellers, catalog, SHOPPER, step, totals,
+  rangeReports, receiptFor, runs, seedRuns, sellers, catalog, SHOPPER, step, totals, users,
 } from "./data";
-import { decide } from "./gate";
+import { decide, normalizeName } from "./gate";
 import { MockError, Router, type MockRequest } from "./router";
 import { advance, startRun } from "./simulate";
 
@@ -105,7 +108,7 @@ function verifyReceipt(token: string): ReceiptVerification {
 function toOrder(p: Purchase): SellerOrder {
   const run = runs.find((r) => r.id === p.runId);
   return {
-    id: `o_${p.id}`, purchaseId: p.id, shopperName: p.shopperName, summary: p.summary, totalMinor: p.totalMinor,
+    id: `o_${p.id}`, purchaseId: p.id, receiptToken: p.receipt.token, shopperName: p.shopperName, summary: p.summary, totalMinor: p.totalMinor,
     paidAt: p.paidAt, deliverBy: run?.cart?.deliveryBy ?? p.paidAt,
     status: p.status === "refunded" ? "refunded" : Date.parse(run?.cart?.deliveryBy ?? p.paidAt) < Date.now() ? "delivered" : "to_fulfil",
   };
@@ -124,13 +127,15 @@ function overview(): OpsOverview {
   const dayAgo = Date.now() - 86_400_000;
   const today = runs.filter((r) => Date.parse(r.startedAt) >= dayAgo);
   const paid = runs.filter((r) => r.purchaseId);
-  const secs = runs.filter((r) => r.endedAt).map((r) => (Date.parse(r.endedAt!) - Date.parse(r.startedAt)) / 1000).sort((a, b) => a - b);
+  // Seeded history is stored at minute precision, so estimate each run's time to a proposed
+  // cart the way the live simulator paces it: a queue wait, then about 1.4 s per step.
+  const secs = runs.map((r) => 1.5 + r.steps.filter((s) => s.kind !== "payment").length * 1.4).sort((a, b) => a - b);
   return {
     runsToday: today.length,
     purchasesToday: purchases.filter((p) => Date.parse(p.paidAt) >= dayAgo).length,
     blockedToday: today.filter((r) => r.status === "blocked").length,
     violations: 0,
-    p95RunSeconds: secs.length ? Math.min(secs[Math.floor(secs.length * 0.95)] ?? secs.at(-1)!, 58) : 0,
+    p95RunSeconds: secs.length ? secs[Math.min(secs.length - 1, Math.floor(secs.length * 0.95))] : 0,
     costPerPurchaseMicroUsd: paid.length ? Math.round(runs.reduce((n, r) => n + r.totals.costMicroUsd, 0) / paid.length) : 0,
     queueDepth: runs.filter((r) => r.status === "queued").length,
     fallbackRate: 0.012,
@@ -202,9 +207,40 @@ const router = new Router()
   .on("GET", "seller/profile", () => findOr404(sellers, (s) => s.id === DEMO_SELLER_ID, "Seller"))
   .on("GET", "seller/catalog", () => catalog.filter((c) => c.sellerId === DEMO_SELLER_ID))
   .on("GET", "seller/orders", () => purchases.filter((p) => p.sellerId === DEMO_SELLER_ID).map(toOrder).sort(byNewest((o) => o.paidAt)))
+  .on("POST", "seller/orders/:id/refund", ({ params }) => {
+    const p = findOr404(purchases, (x) => `o_${x.id}` === params.id && x.sellerId === DEMO_SELLER_ID, "Order");
+    if (p.status === "refunded") return toOrder(p);
+    if (p.status !== "paid" && p.status !== "disputed") throw new MockError(409, "not_refundable", "This order can't be refunded.");
+    p.status = "refunded";
+    return toOrder(p);
+  })
+  .on("POST", "seller/accounts", ({ body }) => {
+    const req = body as RegisterAccountRequest;
+    const s = findOr404(sellers, (x) => x.id === DEMO_SELLER_ID, "Seller");
+    const masked = `•••• ${req.accountNumber.slice(-4)}`;
+    if (s.accounts.some((a) => a.bankCode === req.bankCode && a.accountNumberMasked === masked)) {
+      throw new MockError(409, "already_registered", "That account is already registered.");
+    }
+    // Only an account in the seller's own legal name is verified; payments only go to verified accounts.
+    const matches = normalizeName(req.nameOnAccount) === normalizeName(s.legalName);
+    s.accounts.push({
+      bankCode: req.bankCode, bankName: req.bankName, accountNumberMasked: masked,
+      nameOnAccount: req.nameOnAccount.toUpperCase(), verifiedAt: matches ? new Date().toISOString() : null,
+    });
+    return s;
+  })
   // Support
   .on("GET", "support/blocked", () => runs.filter((r) => r.decision?.outcome === "deny" && r.cart).map(toBlocked).sort(byNewest((b) => b.decidedAt)))
-  .on("GET", "support/disputes", () => disputes)
+  .on("GET", "support/disputes", () => [...disputes].sort(byNewest((d) => d.openedAt)))
+  .on("POST", "support/disputes/:id/resolve", ({ params, body }) => {
+    const d = findOr404(disputes, (x) => x.id === params.id, "Dispute");
+    if (d.status === "resolved") throw new MockError(409, "already_resolved", "This dispute is already resolved.");
+    const { outcome } = body as ResolveDisputeRequest;
+    Object.assign(d, { status: "resolved", resolution: outcome, resolvedAt: new Date().toISOString() });
+    const p = purchases.find((x) => x.id === d.purchaseId);
+    if (p) p.status = outcome === "refunded" ? "refunded" : "paid";
+    return d;
+  })
   // Ops
   .on("GET", "ops/overview", overview)
   .on("GET", "ops/runs", () => runs.map(liveRun).sort(byNewest((r) => r.startedAt)))
@@ -212,6 +248,14 @@ const router = new Router()
   .on("GET", "ops/evals", ({ query }) => evalResults.filter((e) => !query.get("versionId") || e.versionId === query.get("versionId")))
   .on("GET", "ops/range", () => rangeReports)
   // Admin
+  .on("GET", "admin/users", () => users)
+  .on("POST", "admin/users/:id/status", ({ params, body }) => {
+    const u = findOr404(users, (x) => x.id === params.id, "User");
+    const { status } = body as { status: AdminUser["status"] };
+    if (u.role === "admin" && status === "suspended") throw new MockError(409, "cannot_suspend_admin", "Admins can't be suspended here.");
+    u.status = status;
+    return u;
+  })
   .on("POST", "admin/sellers/:id/tier", ({ params, body }) => {
     const s = findOr404(sellers, (x) => x.id === params.id, "Seller");
     const { tier } = body as { tier: SellerTier };
