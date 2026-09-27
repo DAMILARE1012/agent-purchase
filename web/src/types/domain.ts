@@ -40,7 +40,10 @@ export interface Mandate {
   request: string;
   limits: MandateLimits;
   uses: number;
+  /** Everything paid under this mandate. */
   spentMinor: number;
+  /** Standing mandates: paid in the current week or month, which the period cap applies to. */
+  periodSpentMinor: number | null;
   /** SHA-256 of the canonical mandate JSON; the passkey signs this. */
   mandateHash: string;
   signedAt: string;

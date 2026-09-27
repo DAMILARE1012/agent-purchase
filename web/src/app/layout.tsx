@@ -9,8 +9,8 @@ const body = Source_Sans_3({ variable: "--font-body", subsets: ["latin"] });
 const code = JetBrains_Mono({ variable: "--font-code", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: { default: "Scan-to-Confirm", template: "%s · Scan-to-Confirm" },
-  description: "Send money, share signed receipts, and verify payments live.",
+  title: { default: "Mandate Gate", template: "%s · Mandate Gate" },
+  description: "Let AI shop for you, within limits you sign. A gate outside the AI decides what gets paid.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

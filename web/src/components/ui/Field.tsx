@@ -6,7 +6,7 @@ const CONTROL =
 
 interface FieldProps {
   id: string;
-  label: string;
+  label: ReactNode;
   hint?: ReactNode;
   error?: string | null;
   children: ReactNode;

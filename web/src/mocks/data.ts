@@ -134,7 +134,7 @@ export const mandates: Mandate[] = [
     id: "m_toner", status: "active", mode: "present",
     request: "HP 107a toner, under ₦40,000, from a verified seller, delivered by Friday",
     limits: limits({ item: "HP 107A toner", brand: "HP", model: "107A", category: "Printer toner", maxTotalMinor: 4_000_000, deliverBy: nextWeekday(5), expiresAt: ahead(60 * 24 * 3) }),
-    uses: 0, spentMinor: 0, mandateHash: hash("m_toner"), signedAt: ago(26), revokedAt: null, createdAt: ago(27),
+    uses: 0, spentMinor: 0, periodSpentMinor: null, mandateHash: hash("m_toner"), signedAt: ago(26), revokedAt: null, createdAt: ago(27),
     runIds: ["r_toner_1", "r_toner_2"],
   },
   {
@@ -145,28 +145,28 @@ export const mandates: Mandate[] = [
       sellerPolicy: "listed", sellerIds: ["s_quickdata"], expiresAt: ahead(60 * 24 * 60), maxUses: 20,
       periodCapMinor: 500_000, period: "week", shareDelivery: { name: false, phone: true, address: false },
     }),
-    uses: 3, spentMinor: 1_350_000, mandateHash: hash("m_data"), signedAt: ago(60 * 24 * 23), revokedAt: null, createdAt: ago(60 * 24 * 23),
+    uses: 3, spentMinor: 1_350_000, periodSpentMinor: null, mandateHash: hash("m_data"), signedAt: ago(60 * 24 * 23), revokedAt: null, createdAt: ago(60 * 24 * 23),
     runIds: ["r_data_1", "r_data_2", "r_data_3"],
   },
   {
     id: "m_groceries", status: "used_up", mode: "present",
     request: "Monthly provisions: a 50kg bag of rice, 5 litres of vegetable oil and a carton of Indomie, under ₦110,000, delivered to Surulere by Saturday",
     limits: limits({ item: "Rice 50kg, vegetable oil 5L, Indomie carton", category: "Groceries", maxTotalMinor: 11_000_000, sellerPolicy: "verified_and_known", deliverBy: ago(60 * 24 * 2), expiresAt: ago(60 * 24 * 1) }),
-    uses: 1, spentMinor: 10_870_000, mandateHash: hash("m_groceries"), signedAt: ago(60 * 24 * 5), revokedAt: null, createdAt: ago(60 * 24 * 5),
+    uses: 1, spentMinor: 10_870_000, periodSpentMinor: null, mandateHash: hash("m_groceries"), signedAt: ago(60 * 24 * 5), revokedAt: null, createdAt: ago(60 * 24 * 5),
     runIds: ["r_groceries"],
   },
   {
     id: "m_paper", status: "expired", mode: "present",
     request: "5 reams of A4 paper under ₦30,000 by tomorrow",
     limits: limits({ item: "A4 paper", category: "Paper", quantity: 5, maxTotalMinor: 3_000_000, deliverBy: ago(60 * 24 * 8), expiresAt: ago(60 * 24 * 8) }),
-    uses: 0, spentMinor: 0, mandateHash: hash("m_paper"), signedAt: ago(60 * 24 * 9), revokedAt: null, createdAt: ago(60 * 24 * 9),
+    uses: 0, spentMinor: 0, periodSpentMinor: null, mandateHash: hash("m_paper"), signedAt: ago(60 * 24 * 9), revokedAt: null, createdAt: ago(60 * 24 * 9),
     runIds: ["r_paper"],
   },
   {
     id: "m_charger", status: "revoked", mode: "present",
     request: "A 65W USB-C charger under ₦15,000",
     limits: limits({ item: "USB-C 65W charger", category: "Chargers", maxTotalMinor: 1_500_000 }),
-    uses: 0, spentMinor: 0, mandateHash: hash("m_charger"), signedAt: ago(60 * 24 * 12), revokedAt: ago(60 * 24 * 12 - 20), createdAt: ago(60 * 24 * 12),
+    uses: 0, spentMinor: 0, periodSpentMinor: null, mandateHash: hash("m_charger"), signedAt: ago(60 * 24 * 12), revokedAt: ago(60 * 24 * 12 - 20), createdAt: ago(60 * 24 * 12),
     runIds: [],
   },
 ];
@@ -267,7 +267,7 @@ export const purchases: Purchase[] = [];
 
 export function receiptFor(id: string, mandateHash: string, cartId: string, sessionId: string, issuedAt: string) {
   return {
-    id: `rc_${id}`, token: `MG1.${btoa(id).replace(/=+$/, "")}.${hash(`sig:${id}`).slice(0, 43)}`, issuedAt,
+    id: `rc_${id}`, token: `MG1.${btoa(id).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_")}.${hash(`sig:${id}`).slice(0, 43)}`, issuedAt,
     mandateHash, cartHash: hash(`cart:${cartId}`), gateVersion: GATE_VERSION, agentVersion: LIVE_VERSION,
     networkSessionId: sessionId, signingKeyId: "rk-2026-09",
   };
@@ -288,7 +288,7 @@ export function seedRuns(decide: (m: Mandate, c: NonNullable<AgentRun["cart"]>, 
       id: "r_toner_1", mandateId: "m_toner", shopperName: SHOPPER, status: "blocked", agentVersion: LIVE_VERSION,
       startedAt: ago(25), endedAt: ago(23), queuePosition: null, steps: tonerBlockedSteps, cart: blockedCart,
       decision: decide(m("m_toner"), blockedCart, ago(23)), purchaseId: null, totals: totals(tonerBlockedSteps),
-      outcomeNote: "Blocked: the seller isn't verified, and the account belongs to someone else",
+      outcomeNote: "The seller isn't verified, and the account belongs to someone else.",
     },
     {
       id: "r_toner_2", mandateId: "m_toner", shopperName: SHOPPER, status: "awaiting_approval", agentVersion: LIVE_VERSION,
@@ -305,7 +305,7 @@ export function seedRuns(decide: (m: Mandate, c: NonNullable<AgentRun["cart"]>, 
       id: "r_paper", mandateId: "m_paper", shopperName: SHOPPER, status: "gave_up", agentVersion: "shopper-2026.08.4",
       startedAt: ago(60 * 24 * 9 - 2), endedAt: ago(60 * 24 * 9 - 4), queuePosition: null, steps: paperSteps, cart: null,
       decision: null, purchaseId: null, totals: totals(paperSteps),
-      outcomeNote: "No allowed seller could meet the limits. Nothing was paid",
+      outcomeNote: "No allowed seller could meet the limits. Nothing was paid.",
     },
   );
   purchases.push({
@@ -335,9 +335,9 @@ export function seedRuns(decide: (m: Mandate, c: NonNullable<AgentRun["cart"]>, 
 
   // Other shoppers' blocked runs, for the support queue.
   const otherBlocked: Array<[id: string, shopper: string, sellerId: string, sku: string, naira: number, minutesAgo: number, note: string]> = [
-    ["r_rita_1", "Rita Alvarez", "s_cheap_deals", "CDW-TNR-COMP", 1_500, 95, "Blocked: the cart swapped in a compatible toner, not HP 107A"],
-    ["r_jordan_1", "Jordan Price", "s_ikeja_official", "IOHO-TNR-107A", 2_000, 240, "Blocked: look-alike seller, not in the verified list"],
-    ["r_rita_2", "Rita Alvarez", "s_toner_king", "TK-TNR-107A", 2_500, 60 * 26, "Blocked: the account belongs to someone else"],
+    ["r_rita_1", "Rita Alvarez", "s_cheap_deals", "CDW-TNR-COMP", 1_500, 95, "The cart swapped in a compatible toner, not HP 107A."],
+    ["r_jordan_1", "Jordan Price", "s_ikeja_official", "IOHO-TNR-107A", 2_000, 240, "A look-alike seller, not on the verified list."],
+    ["r_rita_2", "Rita Alvarez", "s_toner_king", "TK-TNR-107A", 2_500, 60 * 26, "The account belongs to someone else."],
   ];
   for (const [id, shopper, sellerId, sku, delivery, minutesAgo, note] of otherBlocked) {
     const c = cart(`c_${id}`, sellerId, [[sku, 1]], delivery, ahead(60 * 24 * 2));

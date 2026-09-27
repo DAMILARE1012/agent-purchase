@@ -2,28 +2,28 @@ import { Section } from "./Section";
 
 const QUESTIONS = [
   {
-    q: "Does the person I pay need to install anything?",
-    a: "No. The receipt's QR code is a link, so any phone camera opens the check in the browser. They can also paste the link or upload the image.",
+    q: "Can the AI spend more than I allow?",
+    a: "No. Every payment goes through the gate, which checks the cart against the limits you signed, at the moment of payment. The AI has no way to pay on its own.",
   },
   {
-    q: "What if someone edits the receipt image?",
-    a: "The amount inside the QR code is digitally signed, so it can't be changed. When an image is uploaded, we compare the printed amount with the signed one and look for signs of editing. Either way, you see the real amount from our ledger.",
+    q: "What if a seller tricks the AI?",
+    a: "It can happen, and we measure how often. But the trick only changes what the AI suggests. The gate still refuses a cart that breaks your mandate or pays an account that isn't the seller's.",
   },
   {
-    q: "Can the same receipt be used twice?",
-    a: "Once the payee confirms “I received it”, any later scan says it was already confirmed and when. If they only checked it before, they're warned that it isn't a new payment.",
+    q: "Which AI does the shopping?",
+    a: "Qwen (qwen3.8-27b) running on Groq. It understands your request, decides what to look at next, and reads catalogs that are only photos, like flyers and handwritten price lists.",
   },
   {
-    q: "What happens if a payment is reversed after I've confirmed it?",
-    a: "Both of you are notified straight away, and any later scan shows it as reversed. If you had refunded part of it through Refund, you only lose what you still hold.",
+    q: "Why do I sign with a passkey?",
+    a: "So nobody, including us, can create or widen a mandate for you. The passkey signs a hash of the exact limits you saw.",
   },
   {
-    q: "What does someone who isn't signed in see?",
-    a: "Whether the receipt is genuine, plus its amount, date and live status. Names and account details are only shown to the two people involved.",
+    q: "What does the seller get?",
+    a: "The money in their own bank account, and a signed receipt proving you authorised the purchase. They can check it on the verify page without an account.",
   },
   {
     q: "Is this real money?",
-    a: "Not yet. Scan-to-Confirm is running as a sandbox: new accounts get a test balance, and payments move between test wallets only.",
+    a: "Not yet. Mandate Gate runs as a sandbox with test money, test banks and test sellers. A real launch needs a licensed payment partner.",
   },
 ];
 

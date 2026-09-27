@@ -1,12 +1,25 @@
 // Stand-in for the agent runtime: a new run is scripted up front, then revealed
 // step by step as time passes, so the live shopping view has something to follow.
 
-import type { AgentRun, Cart, CatalogItem, Mandate, RunStep } from "@/types/domain";
+import type { AgentRun, Cart, CatalogItem, GateRule, Mandate, RunStep } from "@/types/domain";
 import { formatMoney } from "@/lib/money";
 import { ahead, catalog, LIVE_VERSION, runs, SHOPPER, sellers, step, totals } from "./data";
 import { decide } from "./gate";
 
 const QUEUE_MS = 1_500;
+
+/** Short phrases for the timeline when a check fails. */
+const FAILED: Partial<Record<GateRule, string>> = {
+  mandate_valid: "mandate no longer valid",
+  cart_signed: "cart signature invalid",
+  seller_allowed: "seller not allowed",
+  arithmetic: "prices don't add up",
+  within_limits: "over your limit",
+  item_matches: "not the item you asked for",
+  delivery_date: "arrives too late",
+  payee_verified: "account isn't the seller's",
+  period_cap: "over the spending cap",
+};
 const STEP_MS = 1_400;
 
 interface Script {
@@ -80,12 +93,12 @@ export function startRun(m: Mandate, id: string): AgentRun {
   let final: Script["final"];
   if (!pick) {
     steps.push(step(0, "give_up", "No listing matched the mandate"));
-    final = { status: "gave_up", decision: null, outcomeNote: "No seller had a matching item. Nothing was paid" };
+    final = { status: "gave_up", decision: null, outcomeNote: "No seller had a matching item. Nothing was paid." };
   } else {
     cart = buildCart(m, pick, runs.length + 1);
     if (cart.totalMinor > m.limits.maxTotalMinor && m.limits.maxTotalMinor > 0 && !sellers.find((s) => s.id === pick.sellerId)?.adversarial) {
       steps.push(step(0, "give_up", `The cheapest option costs ${formatMoney(cart.totalMinor)}, over your ${formatMoney(m.limits.maxTotalMinor)} limit`));
-      final = { status: "gave_up", decision: null, outcomeNote: "Nothing within your limits. Nothing was paid" };
+      final = { status: "gave_up", decision: null, outcomeNote: "Nothing was within your limits. Nothing was paid." };
       cart = null;
     } else {
       steps.push(
@@ -93,10 +106,10 @@ export function startRun(m: Mandate, id: string): AgentRun {
         step(0, "propose_cart", `Proposed the cart: ${formatMoney(cart.totalMinor)}`),
       );
       const decision = decide(m, cart, sellers);
-      const failed = decision.checks.filter((c) => c.result === "fail").map((c) => c.label.toLowerCase());
-      steps.push(step(0, "gate", decision.outcome === "deny" ? `Gate refused the cart: ${failed.join("; ")}` : decision.outcome === "allow" ? "Gate allowed the cart: every check passed" : "Gate allowed the cart, with warnings for you to review"));
+      const failed = decision.checks.filter((c) => c.result === "fail");
+      steps.push(step(0, "gate", decision.outcome === "deny" ? `Gate refused the cart: ${failed.map((c) => FAILED[c.rule] ?? c.rule).join("; ")}` : decision.outcome === "allow" ? "Gate allowed the cart: every check passed" : "Gate allowed the cart, with warnings for you to review"));
       final = decision.outcome === "deny"
-        ? { status: "blocked", decision, outcomeNote: "Blocked by the gate. Nothing was paid" }
+        ? { status: "blocked", decision, outcomeNote: `${failed.map((c) => c.detail).join(". ")}.` }
         : { status: "awaiting_approval", decision, outcomeNote: null };
     }
   }

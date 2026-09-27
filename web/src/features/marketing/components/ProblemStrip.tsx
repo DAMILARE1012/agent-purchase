@@ -1,7 +1,7 @@
 const POINTS = [
-  { stat: "Seconds", text: "is all it takes to edit the amount on a payment screenshot." },
-  { stat: "Nothing", text: "on a screenshot tells you whether the money actually arrived, or stayed." },
-  { stat: "Once", text: "is how often a genuine receipt should be accepted. Screenshots can be reused forever." },
+  { stat: "No undo", text: "Bank transfers are final. There's no chargeback if an AI pays the wrong person." },
+  { stat: "Easy to fool", text: "Sellers can hide instructions in a page or a picture, and an AI may follow them." },
+  { stat: "Wrong account", text: "A cart can name a real shop and carry someone else's account number." },
 ];
 
 /** The problem, stated plainly, before the solution. */
@@ -9,7 +9,7 @@ export function ProblemStrip() {
   return (
     <section className="border-b border-line bg-surface px-4 py-14">
       <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-[1fr_2fr] md:items-center">
-        <h2 className="font-display text-2xl font-bold text-balance sm:text-3xl">A screenshot is a picture, not a payment.</h2>
+        <h2 className="font-display text-2xl font-bold text-balance sm:text-3xl">An AI with your bank account needs rules it can&apos;t talk its way out of.</h2>
         <ul className="grid gap-6 sm:grid-cols-3">
           {POINTS.map((p) => (
             <li key={p.stat} className="flex flex-col gap-1 border-l-2 border-bad pl-4">

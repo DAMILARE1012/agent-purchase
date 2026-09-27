@@ -45,6 +45,9 @@ function findOr404<T>(items: T[], pred: (t: T) => boolean, what: string): T {
 
 const liveRun = (r: AgentRun) => advance(r);
 
+/** Adds what the API computes on read: spending in the current period. */
+const withPeriod = (m: Mandate): Mandate => ({ ...m, periodSpentMinor: m.limits.period ? periodSpent(m) : null });
+
 function periodSpent(m: Mandate): number {
   if (!m.limits.period) return 0;
   const since = Date.now() - (m.limits.period === "week" ? 7 : 30) * 86_400_000;
@@ -61,7 +64,7 @@ function approve(req: MockRequest): Purchase {
   // The gate runs again at payment time; the earlier decision was only for display.
   const decision = decide(mandate, run.cart, sellers, { periodSpentMinor: periodSpent(mandate) });
   if (decision.outcome === "deny") {
-    Object.assign(run, { status: "blocked", decision, endedAt: new Date().toISOString(), outcomeNote: "Something changed since the check. Nothing was paid" });
+    Object.assign(run, { status: "blocked", decision, endedAt: new Date().toISOString(), outcomeNote: "Something changed between the check and your approval, so the gate refused it at payment time." });
     throw new MockError(409, "gate_denied", "The gate refused this cart when re-checked. Nothing was paid.");
   }
 
@@ -137,8 +140,8 @@ function overview(): OpsOverview {
 
 const router = new Router()
   // Mandates
-  .on("GET", "mandates", () => [...mandates].sort(byNewest((m) => m.createdAt)))
-  .on("GET", "mandates/:id", ({ params }) => findOr404(mandates, (m) => m.id === params.id, "Mandate"))
+  .on("GET", "mandates", () => [...mandates].sort(byNewest((m) => m.createdAt)).map(withPeriod))
+  .on("GET", "mandates/:id", ({ params }) => withPeriod(findOr404(mandates, (m) => m.id === params.id, "Mandate")))
   .on("POST", "mandates/draft", ({ body }) => {
     const { request, mode } = body as DraftMandateRequest;
     if (!request?.trim()) throw new MockError(422, "empty_request", "Say what you want to buy.");
@@ -150,7 +153,7 @@ const router = new Router()
     if (limits.maxTotalMinor <= 0) throw new MockError(422, "no_budget", "Set a maximum total before signing.");
     const now = new Date().toISOString();
     const mandate: Mandate = {
-      id: newId("m"), status: "active", mode: draft.mode, request: draft.request, limits, uses: 0, spentMinor: 0,
+      id: newId("m"), status: "active", mode: draft.mode, request: draft.request, limits, uses: 0, spentMinor: 0, periodSpentMinor: null,
       mandateHash: fakeHash(JSON.stringify(limits)), signedAt: now, revokedAt: null, createdAt: now, runIds: [],
     };
     mandates.push(mandate);
@@ -160,7 +163,7 @@ const router = new Router()
     const m = findOr404(mandates, (x) => x.id === params.id, "Mandate");
     if (m.status === "active") Object.assign(m, { status: "revoked", revokedAt: new Date().toISOString() });
     for (const r of runs.filter((x) => x.mandateId === m.id && ["queued", "running", "awaiting_approval"].includes(x.status))) {
-      Object.assign(r, { status: "declined", endedAt: new Date().toISOString(), outcomeNote: "Mandate cancelled. Nothing was paid" });
+      Object.assign(r, { status: "declined", endedAt: new Date().toISOString(), outcomeNote: "The mandate was cancelled. Nothing was paid." });
     }
     return m;
   })
@@ -184,7 +187,7 @@ const router = new Router()
   .on("POST", "carts/:cartId/approve", approve)
   .on("POST", "carts/:cartId/decline", ({ params }) => {
     const run = findOr404(runs, (r) => r.cart?.id === params.cartId, "Cart");
-    if (run.status === "awaiting_approval") Object.assign(run, { status: "declined", endedAt: new Date().toISOString(), outcomeNote: "You declined the cart. Nothing was paid" });
+    if (run.status === "awaiting_approval") Object.assign(run, { status: "declined", endedAt: new Date().toISOString(), outcomeNote: "You declined the cart. Nothing was paid." });
     return run;
   })
   // Purchases and receipts

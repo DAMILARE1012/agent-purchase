@@ -6,6 +6,7 @@ export { Card, CardTitle } from "./Card";
 export { Dialog } from "./Dialog";
 export { Field, Input, Select, Textarea } from "./Field";
 export { Money } from "./Money";
+export { MoneyInput } from "./MoneyInput";
 export { PageHeader } from "./PageHeader";
 export { SegmentedControl } from "./SegmentedControl";
 export { Spinner } from "./Spinner";

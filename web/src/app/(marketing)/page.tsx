@@ -12,12 +12,12 @@ import {
 } from "@/features/marketing";
 
 export const metadata: Metadata = {
-  title: { absolute: "Scan-to-Confirm · Don't trust the screenshot. Scan the receipt." },
+  title: { absolute: "Mandate Gate · Let AI shop for you. Your limits decide what it pays." },
   description:
-    "Every payment comes with a signed QR receipt. Anyone who scans it sees the real payment, live from the ledger, so fake, edited and recycled receipts are caught.",
+    "An AI shopper finds the cart; a gate outside the AI checks it against the limits you signed and the seller's real bank account before any transfer.",
   openGraph: {
-    title: "Scan-to-Confirm",
-    description: "Verifiable receipts for everyday payments. Don't trust the screenshot. Scan the receipt.",
+    title: "Mandate Gate",
+    description: "Safe payments for AI shopping. The AI suggests; your mandate decides.",
     type: "website",
   },
 };

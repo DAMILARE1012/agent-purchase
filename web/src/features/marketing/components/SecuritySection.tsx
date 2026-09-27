@@ -3,32 +3,32 @@ import { Section } from "./Section";
 
 const PRINCIPLES: Array<{ icon: IconName; title: string; text: React.ReactNode }> = [
   {
+    icon: "shield",
+    title: "Rules outside the AI",
+    text: "The gate is ordinary, versioned code. It reads only your signed mandate, the seller's signed cart and the bank's answer, so nothing a seller writes can change its decision.",
+  },
+  {
+    icon: "key",
+    title: "You sign exact values",
+    text: "You approve the actual numbers and names, never an AI-written summary. Your passkey signs a hash of them, and anything the AI couldn't pin down defaults to the strictest option.",
+  },
+  {
+    icon: "bank",
+    title: "Money only to the seller's own account",
+    text: "Before paying, the bank is asked who owns the account. If the name doesn't match the seller's registered legal name, nothing is paid.",
+  },
+  {
     icon: "signature",
-    title: "Signed at the source",
+    title: "Every purchase is provable",
     text: (
       <>
-        Every receipt carries an Ed25519 digital signature. Our public keys are published at{" "}
+        Receipts are signed with Ed25519 and bind your mandate, the cart and the bank reference together. Public keys are at{" "}
         <a href="/.well-known/receipt-keys.json" className="font-mono text-sm text-[#86efc0] underline underline-offset-2">
           /.well-known/receipt-keys.json
-        </a>{" "}
-        so anyone can check a receipt independently.
+        </a>
+        .
       </>
     ),
-  },
-  {
-    icon: "ledger",
-    title: "The ledger is the source of truth",
-    text: "Money moves through a double-entry ledger where entries can never be edited or deleted. A scan always shows the payment's current status, not what it was when the screenshot was taken.",
-  },
-  {
-    icon: "spark",
-    title: "AI adds caution, never removes it",
-    text: "Models look for edited images, risky payments and forgery campaigns. They can flag or hold a payment, but they can never turn a failed check into a pass. People make the final call on accounts.",
-  },
-  {
-    icon: "lock",
-    title: "Private by design",
-    text: "The QR code holds no names or account numbers. Only the two people involved see the details. Your sign-in tokens stay on our servers, never in your browser.",
   },
 ];
 
@@ -38,8 +38,8 @@ export function SecuritySection() {
     <Section
       id="security"
       eyebrow="Security"
-      title="Built so the answer can't be faked."
-      intro="The checks that decide whether money moved are deterministic. AI helps catch what those checks can't see."
+      title="Built so a fooled AI still can't spend your money."
+      intro="We test the AI against a marketplace of dishonest sellers and publish how often it's fooled. The number that must stay at zero is how often money moved wrongly."
       className="border-y border-line bg-[#0c2119] text-white [&_h2]:text-white [&_header_p:first-child]:text-[#86efc0] [&_header_p:last-child]:text-white/75"
     >
       <ul className="grid gap-4 md:grid-cols-2">

@@ -1,14 +1,14 @@
 import { buttonClasses } from "@/components/ui";
 import { DEMO_MODE, DEMO_PASSWORD } from "@/lib/demo";
-import { SIGN_IN_HREF, VERIFY_HREF } from "../lib/links";
+import { SIGN_IN_HREF } from "../lib/links";
 import { Section } from "./Section";
 
 const ACCOUNTS = [
-  { user: "sam", role: "Sends money and shares receipts" },
-  { user: "rita", role: "Receives money and checks receipts" },
-  { user: "ada", role: "A small business taking payments" },
-  { user: "morgan", role: "Risk analyst: reviews flagged payments" },
-  { user: "olivia", role: "Platform finance: sees the full ledger" },
+  { user: "sam", role: "Shopper: mandates, AI shopping, purchases" },
+  { user: "ada", role: "Seller: Ada's Provisions' orders and catalog" },
+  { user: "morgan", role: "Support: blocked carts and disputes" },
+  { user: "olivia", role: "Ops / LLM engineer: traces, evaluations, test marketplace" },
+  { user: "kemi", role: "Admin: seller verification" },
 ];
 
 /** Only shown in sandbox builds (NEXT_PUBLIC_DEMO_MODE). */
@@ -19,7 +19,7 @@ export function SandboxInvite() {
       id="try"
       eyebrow="Try it now"
       title="Explore the sandbox with ready-made accounts."
-      intro="Open two browsers, sign in as the payer in one and the payee in the other, and watch a payment move."
+      intro="Test money, test sellers, and some sellers who are deliberately dishonest."
     >
       <div className="grid items-start gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="overflow-hidden rounded-xl border border-line bg-surface">
@@ -46,15 +46,12 @@ export function SandboxInvite() {
           )}
         </div>
         <div className="flex flex-col gap-4 rounded-xl border border-truth/40 bg-truth-bg p-6">
-          <h3 className="font-display text-xl font-semibold">Or go straight to the fraud scenarios</h3>
+          <h3 className="font-display text-xl font-semibold">Walk through the toner example</h3>
           <p className="text-ink-2">
-            The verify page has one-click scenarios for forged, edited, recycled, reversed and pending receipts, each
-            checked as the person it was shown to.
+            Sign in as <b>sam</b>. One cart was blocked because the account belonged to someone else; another passed every check and is
+            waiting for approval. Or create a new mandate and watch the AI shop.
           </p>
-          <div className="flex flex-wrap gap-2">
-            <a href={VERIFY_HREF} className={buttonClasses("primary")}>Open the scenarios</a>
-            <a href={SIGN_IN_HREF} className={buttonClasses("secondary")}>Sign in</a>
-          </div>
+          <a href={SIGN_IN_HREF} className={buttonClasses("primary", "md", "self-start")}>Sign in</a>
         </div>
       </div>
     </Section>

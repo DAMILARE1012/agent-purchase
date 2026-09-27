@@ -4,27 +4,27 @@ import { Section } from "./Section";
 const AUDIENCES: Array<{ icon: IconName; title: string; text: string; points: string[] }> = [
   {
     icon: "person",
-    title: "Friends and family",
-    text: "Split the bill, pay back a loan, chip in for a gift.",
-    points: ["Know it arrived without asking twice", "A shared record both of you can see"],
+    title: "Busy people and small offices",
+    text: "Toner, data top-ups, monthly provisions: let the AI find and buy them.",
+    points: ["Set a budget once; it can't be exceeded", "Repeat purchases within a weekly or monthly cap"],
   },
   {
     icon: "shop",
-    title: "Sellers and small shops",
-    text: "Hand over goods only when the money is real.",
-    points: ["Scan at the counter in seconds", "Refunds that protect you from reversal scams"],
+    title: "Sellers",
+    text: "Get paid by AI shoppers, with proof the buyer authorised it.",
+    points: ["Payments straight to your own bank account", "A signed receipt you can verify for every order"],
   },
   {
-    icon: "ledger",
-    title: "Landlords, tutors and freelancers",
-    text: "Get paid by people you don't know well.",
-    points: ["Confirm each payment once, for good", "A clear history if there's ever a dispute"],
+    icon: "bot",
+    title: "AI assistants and platforms",
+    text: "Give your assistant the power to buy, without the risk.",
+    points: ["Policy enforced outside the model", "Every run traced and tested against dishonest sellers"],
   },
 ];
 
 export function Audience() {
   return (
-    <Section id="who" eyebrow="Who it's for" title="For anyone who has ever been sent a screenshot and wondered.">
+    <Section id="who" eyebrow="Who it's for" title="For anyone who wants AI to do the shopping, but not the deciding.">
       <ul className="grid gap-4 lg:grid-cols-3">
         {AUDIENCES.map((a) => (
           <li key={a.title} className="flex flex-col gap-4 rounded-xl border border-line bg-surface p-6">

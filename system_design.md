@@ -181,15 +181,15 @@ We build the **UI first**, on realistic mock data, so every screen can be seen a
 **Done when:** the app runs with the new shell and mock data, and the old product is recoverable from git history.
 
 ### M2 · Shopper UI (mock data)
-- [ ] Landing page rewritten for the new product
-- [ ] Home: active mandates, recent purchases, spending against limits, blocked attempts
-- [ ] New mandate: sentence box → editable form with exact values → review → passkey approval
-- [ ] Mandate detail: limits, uses left, spending so far, cancel
-- [ ] Live shopping view: the AI's steps as a timeline (searched, read a flyer, compared), the suggested cart, the gate's checks with ticks and crosses
-- [ ] Cart approval: the exact cart beside the mandate limits; approve or decline
-- [ ] Purchases list and purchase detail with the signed receipt
-- [ ] Public receipt verification page for sellers
-- [ ] Funding balance (reused from the current wallet)
+- [x] Landing page rewritten for the new product
+- [x] Home: active mandates, recent purchases, spending against limits, blocked attempts
+- [x] New mandate: sentence box → editable form with exact values → review → passkey approval
+- [x] Mandate detail: limits, uses left, spending so far, cancel
+- [x] Live shopping view: the AI's steps as a timeline (searched, read a flyer, compared), the suggested cart, the gate's checks with ticks and crosses
+- [x] Cart approval: the exact cart beside the mandate limits; approve or decline
+- [x] Purchases list and purchase detail with the signed receipt
+- [x] Public receipt verification page for sellers
+- [x] Funding balance (reused from the current wallet)
 
 **Done when:** every step of the toner example can be clicked through end to end on mock data, including a blocked cart.
 

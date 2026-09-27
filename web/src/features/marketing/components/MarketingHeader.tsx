@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { buttonClasses } from "@/components/ui";
+import { Icon } from "@/components/ui/Icon";
 import { homeFor } from "@/components/layout/navigation";
 import { useViewer } from "@/features/session";
 import { SIGN_IN_HREF, SIGN_UP_HREF } from "../lib/links";
 
 const LINKS = [
   { href: "#how", label: "How it works" },
-  { href: "#protection", label: "Protection" },
+  { href: "#protection", label: "What it stops" },
   { href: "#who", label: "Who it's for" },
   { href: "#security", label: "Security" },
   { href: "#faq", label: "FAQ" },
@@ -21,8 +22,8 @@ export function MarketingHeader() {
     <header className="sticky top-0 z-40 border-b border-line/70 bg-canvas/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
         <Link href="/" className="flex shrink-0 items-center gap-2 font-display text-lg font-bold whitespace-nowrap">
-          <span aria-hidden="true" className="grid size-7 place-items-center rounded-md bg-ink text-sm text-canvas">✓</span>
-          Scan-to-Confirm
+          <span aria-hidden="true" className="grid size-7 place-items-center rounded-md bg-ink text-canvas"><Icon name="shield" className="size-4" /></span>
+          Mandate Gate
         </Link>
         <nav aria-label="Page sections" className="hidden flex-1 items-center gap-1 md:flex">
           {LINKS.map((l) => (
