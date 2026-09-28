@@ -8,6 +8,7 @@ export { Field, Input, Select, Textarea } from "./Field";
 export { Money } from "./Money";
 export { MoneyInput } from "./MoneyInput";
 export { PageHeader } from "./PageHeader";
+export { Pagination } from "./Pagination";
 export { SegmentedControl } from "./SegmentedControl";
 export { Spinner } from "./Spinner";
 export { StatTile } from "./StatTile";

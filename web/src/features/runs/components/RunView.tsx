@@ -14,6 +14,7 @@ import { CartCard } from "./CartCard";
 import { GateChecks } from "./GateChecks";
 import { RunStatusBadge } from "./RunBits";
 import { RunTimeline } from "./RunTimeline";
+import type { AgentRun } from "@/types/domain";
 
 /** One AI shopping run: live steps, the proposed cart, the gate's decision and approval. */
 export function RunView({ runId }: { runId: string }) {
@@ -90,6 +91,11 @@ export function RunView({ runId }: { runId: string }) {
         <div className="flex flex-col gap-4">
           {run.status === "awaiting_approval" && run.cart && <ApprovalPanel run={run} />}
           {run.cart && <CartCard cart={run.cart} />}
+          {run.cart && (
+            <Link href={`/shop/marketplace?q=${encodeURIComponent(marketQuery(run.cart))}`} className="self-start text-sm font-semibold text-ink-2 underline underline-offset-4 hover:text-ink">
+              Compare with other offers in the marketplace
+            </Link>
+          )}
           {run.decision && <GateChecks decision={run.decision} />}
           {mandate && (
             <Card className="flex flex-col gap-2">
@@ -101,4 +107,10 @@ export function RunView({ runId }: { runId: string }) {
       </div>
     </div>
   );
+}
+
+/** What to search the marketplace for, to compare with the AI's cart: the first line's brand and model, or its name. */
+function marketQuery(cart: NonNullable<AgentRun["cart"]>): string {
+  const line = cart.lines[0];
+  return line?.brand && line.model ? `${line.brand} ${line.model}` : (line?.name ?? "").split(",")[0];
 }

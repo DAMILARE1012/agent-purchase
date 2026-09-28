@@ -249,6 +249,10 @@ Passkeys are registered with the platform rather than through Keycloak: Keycloak
 - [x] Access tests: every role blocked from other users' data (141 checks)
 - [x] Signed purchase receipts; verify page uses real data; seller orders use real data
 
+Added after M7: a Marketplace page for shoppers. It shows every seller's public offers grouped by product, with the platform's trust tier and delivery terms, and the photo catalogs as photos. It's for comparing and starting: "Ask the AI to buy this" opens a new mandate pre-filled, and nothing can be bought directly, so every purchase still goes through a mandate and the gate.
+
+Added after M7: approving a cart with a one-time email code, as a fallback when the passkey isn't at hand. Only up to ₦50,000 (configurable), only to a verified email, bound to that exact cart, 5 minutes, 5 tries, used once; the receipt marks it as weaker than a passkey. Mandates and larger payments still need a passkey.
+
 The ledger moved from the previous product's dollars to naira. Refunds are left for M12, with disputes: sellers see a note instead of the refund button. Ops' "violations" figure is now checked from stored purchases (over the amount, after expiry, without the gate's allow) and should always be 0.
 
 **Done when:** an approved cart is paid once to the right account; any rule-breaking cart is refused with reasons; 50 parallel approvals against one mandate never exceed its limits.

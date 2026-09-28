@@ -83,6 +83,8 @@ def seller_out(seller: Seller) -> dict:
     return {
         "id": seller.id, "displayName": seller.display_name, "category": seller.category, "city": seller.city,
         "catalogKind": seller.catalog_kind,
+        # Published delivery terms (the signed cart has the exact fee and date).
+        "deliveryFeeMinor": seller.delivery_fee_naira * 100, "deliveryDays": seller.delivery_days,
     }
 
 

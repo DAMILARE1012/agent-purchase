@@ -6,7 +6,7 @@ import time
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -23,7 +23,7 @@ from app.security import Viewer, require_role, require_viewer
 from app.agent import releases
 from app.evals import gate as evals_gate
 from app.evals import report as evals_report
-from app.services import intent, mandates, passkeys, payments, runqueue, runs
+from app.services import browse, intent, mandates, passkeys, payments, runqueue, runs
 
 router = APIRouter(tags=["agent"])
 shopper = require_role("shopper")
@@ -43,6 +43,7 @@ class SignatureIn(Schema):
     kind: str
     challenge_id: str | None = None
     credential: dict | None = None
+    code: str | None = Field(default=None, max_length=12)  # kind "email_code": the one-time code from the email
 
 
 class MandateIn(Schema):
@@ -233,6 +234,18 @@ async def run_events(run_id: str, request: Request, viewer: Viewer = Depends(req
     return StreamingResponse(stream(), media_type="text/event-stream", headers={"cache-control": "no-cache", "x-accel-buffering": "no"})
 
 
+@router.get("/carts/{cart_id}/approval-methods")
+def cart_approval_methods(cart_id: str, viewer: Viewer = Depends(shopper), db: Session = Depends(get_db)) -> dict:
+    """A passkey always; an email code too for carts up to EMAIL_APPROVAL_MAX_MINOR, with the reason when not."""
+    return payments.approval_methods(db, viewer, cart_id)
+
+
+@router.post("/carts/{cart_id}/email-code")
+def send_cart_email_code(cart_id: str, viewer: Viewer = Depends(shopper), db: Session = Depends(get_db)) -> dict:
+    """Emails a one-time code bound to exactly this cart. Approve with signature {kind: "email_code", code}."""
+    return payments.send_email_code(db, viewer, cart_id)
+
+
 @router.post("/carts/{cart_id}/approval-options")
 def cart_approval_options(cart_id: str, viewer: Viewer = Depends(shopper), db: Session = Depends(get_db)) -> dict:
     """The WebAuthn challenge for approving exactly this cart (it commits to the SHA-256 of the seller-signed cart)."""
@@ -249,6 +262,20 @@ def approve_cart(cart_id: str, body: ApproveIn, viewer: Viewer = Depends(shopper
 @router.post("/carts/{cart_id}/decline")
 def decline_cart(cart_id: str, viewer: Viewer = Depends(shopper), db: Session = Depends(get_db)) -> dict:
     return runs.serialize(db, runs.decline(db, viewer, cart_id))
+
+
+# ---- Marketplace (browsing) ---------------------------------------------------------------------------
+
+
+@router.get("/marketplace")
+def marketplace_browse(_: Viewer = Depends(require_viewer), db: Session = Depends(get_db)) -> dict:
+    """Every seller's public catalog, grouped by product, with the platform's trust tier. For looking; buying goes through a mandate."""
+    return browse.browse(db)
+
+
+@router.get("/marketplace/photos/{seller_id}/{page}")
+def marketplace_photo(seller_id: str, page: int, _: Viewer = Depends(require_viewer)) -> Response:
+    return Response(browse.photo(seller_id, page), media_type="image/jpeg", headers={"cache-control": "private, max-age=300"})
 
 
 # ---- Purchases, receipts and orders ---------------------------------------------------------------------

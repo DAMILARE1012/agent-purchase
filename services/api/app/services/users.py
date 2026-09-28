@@ -78,6 +78,8 @@ def provision(db: Session, principal: Principal) -> Viewer:
                 user.role = role
             if principal.name and user.display_name != principal.name:
                 user.display_name = principal.name
+            if principal.email and user.email != principal.email:
+                user.email = principal.email
 
         account = _wallet_of(db, user.id)
         if account is None and role in WALLET_ROLES:
@@ -89,4 +91,4 @@ def provision(db: Session, principal: Principal) -> Viewer:
         user = db.get(User, principal.sub)
         assert user is not None
         account = _wallet_of(db, user.id)
-    return Viewer(user=user, account=account, client_id=principal.client_id)
+    return Viewer(user=user, account=account, client_id=principal.client_id, email_verified=principal.email_verified)

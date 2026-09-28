@@ -57,6 +57,8 @@ const OWN_DATA = [
   ["GET", `/v1/runs/${R}`],
   ["GET", `/v1/runs/${R}/events`],
   ["POST", `/v1/carts/${C}/approval-options`],
+  ["GET", `/v1/carts/${C}/approval-methods`],
+  ["POST", `/v1/carts/${C}/email-code`],
   ["POST", `/v1/carts/${C}/approve`, { signature: { kind: "test" } }],
   ["POST", `/v1/carts/${C}/decline`],
   ["GET", `/v1/purchases/${P}`],

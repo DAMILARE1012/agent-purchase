@@ -1,4 +1,4 @@
-import type { AgentRun, CartApprovalOptions, Purchase } from "@/types/domain";
+import type { AgentRun, ApprovalMethods, CartApprovalOptions, EmailCodeSent, Purchase } from "@/types/domain";
 import { api } from "@/store/api";
 
 export const runsApi = api.injectEndpoints({
@@ -17,6 +17,14 @@ export const runsApi = api.injectEndpoints({
       invalidatesTags: (_r, _e, { mandateId }) => [{ type: "Run", id: "LIST" }, { type: "Mandate", id: mandateId }],
     }),
     /** A WebAuthn challenge that commits to exactly this seller-signed cart. */
+    /** Whether this cart can be approved with an email code as well as a passkey (and why not, when it can't). */
+    getApprovalMethods: build.query<ApprovalMethods, string>({
+      query: (cartId) => `carts/${cartId}/approval-methods`,
+    }),
+    /** Emails a one-time code that approves exactly this cart. */
+    sendEmailCode: build.mutation<EmailCodeSent, string>({
+      query: (cartId) => ({ url: `carts/${cartId}/email-code`, method: "POST" }),
+    }),
     cartApprovalOptions: build.mutation<CartApprovalOptions, string>({
       query: (cartId) => ({ url: `carts/${cartId}/approval-options`, method: "POST" }),
     }),
@@ -39,13 +47,17 @@ export const runsApi = api.injectEndpoints({
   }),
 });
 
-type CartApprovalSignature = { kind: "passkey"; challengeId: string; credential: Record<string, unknown> };
+type CartApprovalSignature =
+  | { kind: "passkey"; challengeId: string; credential: Record<string, unknown> }
+  | { kind: "email_code"; code: string };
 
 export const {
   useGetRunsQuery,
   useGetRunQuery,
   useStartRunMutation,
   useCartApprovalOptionsMutation,
+  useGetApprovalMethodsQuery,
+  useSendEmailCodeMutation,
   useApproveCartMutation,
   useDeclineCartMutation,
 } = runsApi;

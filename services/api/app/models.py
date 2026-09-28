@@ -371,7 +371,7 @@ class Purchase(Base):
     agent_version: Mapped[str] = mapped_column(String(60))
     # The gate's decision at the moment of payment (not the one from when the AI proposed the cart).
     decision: Mapped[dict] = mapped_column(JSON)
-    approval_kind: Mapped[str] = mapped_column(String(12))  # passkey | test
+    approval_kind: Mapped[str] = mapped_column(String(12))  # passkey | email_code | test
     approval: Mapped[str] = mapped_column(Text)  # The WebAuthn assertion over the cart's challenge, as JSON.
     passkey_id: Mapped[int | None] = mapped_column(ForeignKey("passkeys.id"))
     receipt_token: Mapped[str] = mapped_column(Text)

@@ -133,6 +133,9 @@ def complete(req: LlmRequest) -> LlmResult:
     settings = get_settings()
     provider = providers.provider_name()
     models = [SANDBOX_MODEL] if provider == "sandbox" else req.models
+    if req.priority == "eval":
+        # An evaluation measures the release's own model. Falling back would silently measure another one.
+        models = models[:1]
     input_hash = _input_hash(req)
     user = req.user_id or "system"
     deadline = req.deadline or (time.monotonic() + 120)

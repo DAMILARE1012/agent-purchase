@@ -9,8 +9,9 @@ import { errorMessage } from "@/lib/api-error";
 import { formatMoney } from "@/lib/money";
 import { signWithPasskey } from "@/lib/webauthn";
 import { useAppDispatch } from "@/store/hooks";
-import type { AgentRun } from "@/types/domain";
-import { useApproveCartMutation, useCartApprovalOptionsMutation, useDeclineCartMutation } from "../api";
+import type { AgentRun, Purchase } from "@/types/domain";
+import { useApproveCartMutation, useCartApprovalOptionsMutation, useDeclineCartMutation, useGetApprovalMethodsQuery } from "../api";
+import { EmailCodeDialog } from "./EmailCodeDialog";
 
 /**
  * Approve (pay) or decline a cart the gate allowed. Approving is a passkey signature over
@@ -21,6 +22,8 @@ export function ApprovalPanel({ run }: { run: AgentRun }) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const { data: methods } = useGetApprovalMethodsQuery(cart.id);
   const [cartHash, setCartHash] = useState<string | null>(null);
   const [getOptions] = useCartApprovalOptionsMutation();
   const [approve] = useApproveCartMutation();
@@ -35,7 +38,13 @@ export function ApprovalPanel({ run }: { run: AgentRun }) {
       cartId: cart.id, runId: run.id, mandateId: run.mandateId,
       signature: { kind: "passkey", challengeId: options.challengeId, credential },
     }).unwrap();
+    paid(purchase);
+  }
+
+  /** After either approval (passkey or email code): to the purchase and its receipt. */
+  function paid(purchase: Purchase) {
     setOpen(false);
+    setEmailOpen(false);
     dispatch(notify(purchase.status === "paid" ? `Paid ${cart.sellerName}. Your receipt is ready.` : "Payment sent. Waiting for the bank to confirm."));
     router.push(`/shop/purchases/${purchase.id}`);
   }
@@ -59,6 +68,14 @@ export function ApprovalPanel({ run }: { run: AgentRun }) {
         <Button onClick={() => setOpen(true)}><Icon name="key" className="size-4" /> Approve and pay</Button>
         <Button variant="secondary" loading={declining.isLoading} onClick={() => decline({ cartId: cart.id, runId: run.id })}>Decline</Button>
       </div>
+      {methods?.emailCode.available ? (
+        <button type="button" onClick={() => setEmailOpen(true)} className="self-start text-sm font-semibold text-ink-2 underline underline-offset-4 hover:text-ink">
+          No passkey on this device? Approve with a code sent to {methods.emailCode.sentTo}
+        </button>
+      ) : methods?.emailCode.reason && methods.emailCode.limitMinor < cart.totalMinor ? (
+        <p className="text-xs text-muted">{methods.emailCode.reason}</p>
+      ) : null}
+      <EmailCodeDialog open={emailOpen} onClose={() => setEmailOpen(false)} run={run} onPaid={paid} />
       <PasskeyPrompt
         open={open}
         onClose={() => { setOpen(false); setCartHash(null); }}

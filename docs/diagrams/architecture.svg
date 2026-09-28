@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="Architecture: people use the web app; the web app signs them in with Keycloak and calls the API; the API queues shopping runs for the worker; the worker asks sellers and the Qwen model; the API drafts mandates with Qwen and uses the banks for name checks and transfers; data is kept in Postgres, Redis and Mailpit.">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475467"/>
+    </marker>
+    <style>
+      .t { font-family: "Segoe UI", Helvetica, Arial, sans-serif; fill: #0b1220; }
+      .zone { font-size: 13px; font-weight: 700; letter-spacing: 0.6px; fill: #667085; }
+      .title { font-size: 16px; font-weight: 700; }
+      .body { font-size: 12.5px; fill: #3b4455; }
+      .chip { font-size: 12.5px; font-weight: 600; }
+      .label { font-size: 12px; fill: #475467; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="640" fill="#ffffff"/>
+
+  <!-- Zones -->
+  <rect x="20" y="40" width="190" height="580" rx="16" fill="#f5f6f8"/>
+  <text class="t zone" x="40" y="68">PEOPLE</text>
+  <rect x="236" y="40" width="660" height="580" rx="16" fill="#f5f6f8"/>
+  <text class="t zone" x="256" y="68">MANDATE GATE PLATFORM</text>
+  <rect x="922" y="40" width="338" height="580" rx="16" fill="#f5f6f8"/>
+  <text class="t zone" x="942" y="68">OUTSIDE WORLD</text>
+
+  <!-- People -->
+  <rect x="40" y="230" width="150" height="150" rx="12" fill="#ffffff" stroke="#cdd2da" stroke-width="1.5"/>
+  <text class="t title" x="56" y="260">Shoppers</text>
+  <text class="t title" x="56" y="286">Sellers</text>
+  <text class="t title" x="56" y="312">Support, ops</text>
+  <text class="t title" x="56" y="338">Admins</text>
+  <text class="t body" x="56" y="364">in the browser</text>
+
+  <!-- Web -->
+  <rect x="256" y="250" width="220" height="110" rx="12" fill="#ffffff" stroke="#cdd2da" stroke-width="1.5"/>
+  <text class="t title" x="272" y="278">web · Next.js</text>
+  <text class="t body" x="272" y="300">The app for every role.</text>
+  <text class="t body" x="272" y="318">Signs you in and calls the</text>
+  <text class="t body" x="272" y="336">API for you: no tokens in</text>
+  <text class="t body" x="272" y="352">the browser.</text>
+
+  <!-- Keycloak -->
+  <rect x="256" y="410" width="220" height="70" rx="12" fill="#ffffff" stroke="#cdd2da" stroke-width="1.5"/>
+  <text class="t title" x="272" y="438">keycloak</text>
+  <text class="t body" x="272" y="460">Accounts and roles</text>
+
+  <!-- Worker -->
+  <rect x="520" y="90" width="356" height="110" rx="12" fill="#fdf4e6" stroke="#9a5a00" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text class="t title" x="536" y="118">worker · the AI shopper</text>
+  <text class="t body" x="536" y="140">Runs each shopping run step by step: asks the</text>
+  <text class="t body" x="536" y="158">model for the next step, searches sellers, reads</text>
+  <text class="t body" x="536" y="176">photos, proposes a cart. It can't pay.</text>
+
+  <!-- API -->
+  <rect x="520" y="250" width="356" height="230" rx="12" fill="#ffffff" stroke="#0b1220" stroke-width="1.5"/>
+  <text class="t title" x="536" y="278">api · FastAPI</text>
+  <rect x="536" y="294" width="160" height="34" rx="8" fill="#eef0fd"/><text class="t chip" x="548" y="316" fill="#3f46b8">Mandates, passkeys</text>
+  <rect x="704" y="294" width="156" height="34" rx="8" fill="#e8f6ef" stroke="#0c7a4a" stroke-width="1.5"/><text class="t chip" x="716" y="316" fill="#0c7a4a">Gate · 9 checks</text>
+  <rect x="536" y="336" width="160" height="34" rx="8" fill="#f5f6f8"/><text class="t chip" x="548" y="358">Payments, ledger</text>
+  <rect x="704" y="336" width="156" height="34" rx="8" fill="#f5f6f8"/><text class="t chip" x="716" y="358">Signed receipts</text>
+  <rect x="536" y="378" width="160" height="34" rx="8" fill="#f5f6f8"/><text class="t chip" x="548" y="400">Model gateway</text>
+  <rect x="704" y="378" width="156" height="34" rx="8" fill="#f5f6f8"/><text class="t chip" x="716" y="400">Evaluations</text>
+  <text class="t body" x="536" y="438">The model gateway enforces rate limits, budgets</text>
+  <text class="t body" x="536" y="456">and retries, and logs every model call.</text>
+
+  <!-- Data -->
+  <rect x="256" y="520" width="620" height="80" rx="12" fill="#ffffff" stroke="#cdd2da" stroke-width="1.5"/>
+  <text class="t body" x="272" y="546">Kept by the api and worker in</text>
+  <rect x="272" y="556" width="176" height="30" rx="8" fill="#f5f6f8"/><text class="t chip" x="284" y="576">postgres · data</text>
+  <rect x="458" y="556" width="236" height="30" rx="8" fill="#f5f6f8"/><text class="t chip" x="470" y="576">redis · queue, live updates</text>
+  <rect x="704" y="556" width="156" height="30" rx="8" fill="#f5f6f8"/><text class="t chip" x="716" y="576">mailpit · email</text>
+
+  <!-- Outside world -->
+  <rect x="942" y="100" width="298" height="90" rx="12" fill="#ffffff" stroke="#cdd2da" stroke-width="1.5"/>
+  <text class="t title" x="958" y="128">Sellers · marketplace</text>
+  <text class="t body" x="958" y="150">23 test sellers, 3 dishonest.</text>
+  <text class="t body" x="958" y="168">Catalogs, photos, signed carts.</text>
+
+  <rect x="942" y="250" width="298" height="90" rx="12" fill="#eef0fd" stroke="#3f46b8" stroke-width="1.5"/>
+  <text class="t title" x="958" y="278">Qwen on Groq</text>
+  <text class="t body" x="958" y="300">The AI model: drafts mandates,</text>
+  <text class="t body" x="958" y="318">decides each shopping step.</text>
+
+  <rect x="942" y="390" width="298" height="90" rx="12" fill="#ffffff" stroke="#cdd2da" stroke-width="1.5"/>
+  <text class="t title" x="958" y="418">Banks · payment switch</text>
+  <text class="t body" x="958" y="440">4 test banks: account name</text>
+  <text class="t body" x="958" y="458">checks and transfers.</text>
+
+  <!-- Arrows -->
+  <line x1="190" y1="305" x2="252" y2="305" stroke="#475467" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="476" y1="305" x2="516" y2="305" stroke="#475467" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="366" y1="360" x2="366" y2="406" stroke="#475467" stroke-width="1.5" marker-end="url(#a)"/>
+  <text class="t label" x="374" y="388">sign-in</text>
+  <line x1="698" y1="250" x2="698" y2="204" stroke="#475467" stroke-width="1.5" marker-end="url(#a)"/>
+  <text class="t label" x="706" y="231">shopping runs, via a queue</text>
+  <line x1="876" y1="145" x2="938" y2="145" stroke="#475467" stroke-width="1.5" marker-end="url(#a)"/>
+  <text class="t label" x="880" y="136">browse</text>
+  <line x1="876" y1="190" x2="938" y2="270" stroke="#475467" stroke-width="1.5" marker-end="url(#a)"/>
+  <text class="t label" x="880" y="222">steps</text>
+  <line x1="876" y1="300" x2="938" y2="300" stroke="#475467" stroke-width="1.5" marker-end="url(#a)"/>
+  <text class="t label" x="880" y="291">drafts</text>
+  <line x1="876" y1="435" x2="938" y2="435" stroke="#475467" stroke-width="1.5" marker-end="url(#a)"/>
+  <text class="t label" x="880" y="426">checks, pays</text>
+</svg>

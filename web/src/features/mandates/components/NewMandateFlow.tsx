@@ -22,11 +22,11 @@ const EXAMPLES: Array<{ text: string; mode: MandateMode }> = [
 ];
 
 /** Sentence → Qwen's draft → exact limits the shopper edits → passkey signature. */
-export function NewMandateFlow() {
+export function NewMandateFlow({ initialRequest = "" }: { initialRequest?: string }) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const now = useNow();
-  const [request, setRequest] = useState("");
+  const [request, setRequest] = useState(initialRequest);
   const [mode, setMode] = useState<MandateMode>("present");
   const [draft, setDraft] = useState<MandateDraft | null>(null);
   const [limits, setLimits] = useState<MandateLimits | null>(null);

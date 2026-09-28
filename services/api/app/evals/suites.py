@@ -30,7 +30,8 @@ from app.services.runs import EVAL_USER_ID
 WAT = timedelta(hours=1)
 Log = Callable[[str], None]
 # Provider limits, not model behaviour: a suite that hits one is stopped and nothing is saved.
-_INFRASTRUCTURE = ("per day", "(TPD)", "(RPD)", "circuit open", "No model capacity", "daily AI budget", "network")
+_INFRASTRUCTURE = ("per day", "(TPD)", "(RPD)", "Rate limit reached", "rate_limit_exceeded", "circuit open", "No model capacity",
+                   "daily AI budget", "network")
 
 
 class EvalAborted(Exception):
@@ -201,7 +202,8 @@ def _run_task(db: Session, release: Release, task: dict, limits: dict) -> dict:
 
     db.expire_all()
     run = db.get(AgentRun, run.id)
-    _check_infrastructure(run.error, f"{task['id']} ({run.id})")
+    # A budget refusal ends the run with a note and no error; a provider failure sets both.
+    _check_infrastructure(f"{run.error or ''} {run.outcome_note or ''}", f"{task['id']} ({run.id})")
     cart = (run.signed_cart or {}).get("cart") or {}
     items = {i["sku"]: i for i in marketplace.seller_items(cart["sellerId"])} if cart else {}
     model_ms = db.scalar(select(func.coalesce(func.sum(InferenceLog.latency_ms), 0)).where(InferenceLog.run_id == run.id)) or 0

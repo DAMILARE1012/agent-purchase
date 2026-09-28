@@ -28,6 +28,8 @@ class Principal:
     name: str
     email: str | None
     roles: frozenset[str] = field(default_factory=frozenset)
+    # Keycloak's email_verified claim: approval codes are only sent to verified addresses.
+    email_verified: bool = False
     # The OAuth client the token was issued to (e.g. the web app, or the scan-cli test client).
     client_id: str | None = None
 
@@ -39,6 +41,7 @@ class Viewer:
     user: User
     account: Account | None
     client_id: str | None = None
+    email_verified: bool = False
 
     @property
     def role(self) -> str:
@@ -77,6 +80,7 @@ def decode_access_token(token: str) -> Principal:
         username=username,
         name=name or username,
         email=claims.get("email"),
+        email_verified=bool(claims.get("email_verified", False)),
         roles=frozenset(claims.get("realm_access", {}).get("roles", [])),
         client_id=claims.get("azp"),
     )

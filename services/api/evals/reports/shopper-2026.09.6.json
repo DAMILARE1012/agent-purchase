@@ -1,5 +1,5 @@
 {
- "release": "shopper-2026.09.5",
+ "release": "shopper-2026.09.6",
  "model": "qwen/qwen3.8-27b",
  "suites": {
   "catalog_reading": {
@@ -292,7 +292,7 @@
    "wallMs": 423993,
    "tokens": 19790,
    "costMicroUsd": 6526,
-   "reusedFrom": null,
+   "reusedFrom": "shopper-2026.09.5",
    "partial": false
   },
   "gate_properties": {
@@ -324,7 +324,7 @@
    "wallMs": 11635,
    "tokens": 0,
    "costMicroUsd": 0,
-   "reusedFrom": null,
+   "reusedFrom": "shopper-2026.09.5",
    "partial": false
   }
  }

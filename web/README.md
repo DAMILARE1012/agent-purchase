@@ -63,6 +63,7 @@ scripts/smoke-login.mjs     End-to-end sign-in test for every role (non-destruct
 | `session` | Current user, sign in / out, `RequireSignIn` guard, role home redirect |
 | `dashboard` | Shopper home: carts waiting, live runs, spending, blocked attempts, activity |
 | `mandates` | New-mandate flow (sentence → Qwen draft with the shopper's words behind each value → exact limits → passkey signature), list, detail with signature check, cancel |
+| `marketplace` | Browse every seller's offers grouped by product, trust tiers, delivery terms and photo catalogs; "Ask the AI to buy this" pre-fills a mandate |
 | `passkeys` | Security page: create and remove passkeys; `PasskeyPrompt`, the signing dialog used for mandates and payments (WebAuthn, in `lib/webauthn.ts`) |
 | `runs` | AI shopping runs: live timeline, signed cart, gate checks, approve with a passkey (pays) or decline |
 | `purchases` | Purchases, signed receipts with QR, public receipt verification (real API) |

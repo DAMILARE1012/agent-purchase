@@ -35,6 +35,12 @@ services:
       timeout: 3s
       retries: 20
 
+  # Sandbox email: catches every email the platform sends (approval codes). Inbox: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports:
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.1.4
     command: ["start-dev", "--import-realm"]
@@ -109,6 +115,15 @@ services:
       WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-localhost}
       ALLOW_TEST_SIGNATURES: ${ALLOW_TEST_SIGNATURES:-false}
       LLM_EVAL_DAILY_TOKENS: ${LLM_EVAL_DAILY_TOKENS:-120000}
+      # Email for approval codes: Mailpit in the sandbox; Gmail or a mail service in production (see .env.example).
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-false}
+      SMTP_SSL: ${SMTP_SSL:-false}
+      MAIL_FROM: ${MAIL_FROM:-Mandate Gate <no-reply@mandate-gate.local>}
+      EMAIL_APPROVAL_MAX_MINOR: ${EMAIL_APPROVAL_MAX_MINOR:-5000000}
     ports:
       - "${API_PORT:?API_PORT is not set}:8000"
     # Development: evaluation reports written in the container land in the repo, next to the prompts they measured.

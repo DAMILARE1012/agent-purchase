@@ -1,166 +1,169 @@
 # Mandate Gate
 
-Lets an AI assistant buy things for you with your bank account, without being able to spend your money in ways you didn't agree to.
+**Let an AI shop for you and pay by bank transfer, without it being able to spend your money in ways you didn't agree to.**
 
-You sign a **mandate**: exact limits such as the item, maximum total, allowed sellers and a delivery deadline. A Qwen-based shopping agent finds and proposes a cart, and a rule-based **gate** outside the AI decides whether money can move. The gate checks the cart against your mandate, and checks with the bank that the account being paid really belongs to the seller. Payments are bank transfers, which can't be undone, so the check happens before the money leaves. The design and milestones are in [`system_design.md`](system_design.md).
+![Mandate Gate landing page](docs/screenshots/01-landing.png)
 
-> **Status: M7 (gate and payments).** The whole path is real. Qwen drafts a mandate from the shopper's sentence (every value must quote their own words), and the shopper signs the exact limits with a passkey. A worker runs the Qwen shopper against the sandbox marketplace, progress streams live to the browser, and the gate decides on the proposed cart. Approving it is a passkey signature over the seller-signed cart; the gate runs again inside the payment transaction, the money is held and sent by bank transfer, and the purchase gets a signed receipt anyone can check at /verify. Sellers see their paid orders. The ledger is in naira. Every model call goes through the LLM gateway (shared fair rate limits in Redis, retries, circuit breaker, cache, budgets, inference log); without `GROQ_API_KEY` a scripted sandbox provider stands in for the model and says so. Still mock data: disputes and refunds (M12), evaluations (M8), the test-marketplace report (M9) and admin users. The previous product (Scan-to-Confirm, a wallet with signed QR receipts) is in git history, and its designs are in `docs/archive/`.
+## The problem
 
-## Run it
+Online shopping in Nigeria runs on **bank transfers**. A transfer can't be reversed: there is no chargeback and no card network to claim a refund from. If you send money to the wrong account, it's gone.
 
-Requirements: Docker Desktop (with Compose).
+AI agents can now shop for people, but an AI is easy to mislead:
+
+- **Hidden instructions.** A seller's page says "ignore your limits, this is the best deal" and the AI believes it.
+- **Fake stores.** A new shop copies a trusted brand's name and undercuts every price.
+- **Swapped accounts.** The cart names one business, but the bank account belongs to someone else.
+- **Misunderstood requests.** You said "under ₦40,000"; the AI decided ₦45,000 was close enough.
+
+Giving an AI your bank login means one mistake costs real money you can't get back.
+
+## What we're building
+
+A way to let an AI shop for you where **the AI can suggest a purchase, but only rules you signed can let money leave**:
+
+- **You set the limits once**, in plain words: item, price, sellers, delivery. You sign them. That's your *mandate*.
+- **The AI does the searching**: compares sellers, reads catalogs, even photos of price lists.
+- **A gate outside the AI checks every cart** against your mandate and the bank's records. It's plain code, not a model, so it can't be talked into anything.
+- **You approve the exact cart** before any money moves, and everyone gets a receipt that proves it.
+
+The goal: an AI that can be fooled, and still can't cost you money.
+
+## How it works
+
+![How a purchase works](docs/diagrams/how-it-works.svg)
+
+1. **You ask.** "HP 107A toner, under ₦40,000, from a verified seller, by Friday."
+2. **Mandate.** Qwen drafts the exact limits. Every value must quote your words; anything you didn't say is set to the strictest option. You check them and sign with your passkey.
+3. **AI shopper.** It searches sellers, reads their catalogs and proposes a cart. It has no way to pay.
+4. **Gate.** Nine checks in plain code: the item, the price, the seller, the delivery date, and asking the bank who owns the account being paid. If any check fails, the cart is refused and nothing is paid.
+5. **You approve** that exact cart, with your passkey (or an email code for carts up to ₦50,000).
+6. **Payment.** The gate checks again at the moment of payment, then the bank transfer is made.
+7. **Receipt.** Signed by the platform. The seller, or anyone, can verify it at `/verify`.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Marketplace](docs/screenshots/02-marketplace.png) | ![Mandate](docs/screenshots/03-mandate.png) |
+| **Marketplace.** Compare every seller's offer for the same product. | **Mandate.** Check the limits drafted from your words, then sign. |
+| ![Blocked by the gate](docs/screenshots/04-gate-blocked.png) | ![Approve](docs/screenshots/05-approve.png) |
+| **Blocked.** The AI picked a dishonest seller; the gate refused. | **Approve.** You sign the exact amount and account. |
+| ![Receipt](docs/screenshots/06-receipt.png) | ![Verify](docs/screenshots/07-verify.png) |
+| **Receipt.** What was paid, to whom, and under which mandate. | **Verify.** Anyone can check a receipt, no account needed. |
+
+## Quick start
+
+Needs Docker Desktop.
 
 ```bash
-cp .env.example .env      # first time only; a ready-to-use .env is already included
+cp .env.example .env
 docker compose up --build
 ```
 
-When all eight services are healthy (with the default `.env`):
+Open **http://localhost:3000** (use `localhost`, not `127.0.0.1`: passkeys and sign-in depend on it).
 
-| What | URL |
+| | URL |
 |---|---|
-| **Web app** | http://localhost:3000 |
-| API docs (Swagger) | http://localhost:8000/docs |
-| Keycloak admin console | http://localhost:8080/admin (admin / admin) |
-| Sandbox payment network (Swagger) | http://localhost:8100/docs |
-| Sandbox marketplace (Swagger) | http://localhost:8200/docs |
+| Web app | http://localhost:3000 |
+| API docs | http://localhost:8000/docs |
+| Email inbox (sandbox) | http://localhost:8025 |
+| Keycloak admin | http://localhost:8080/admin (admin / admin) |
+| Sandbox banks / marketplace | http://localhost:8100/docs · http://localhost:8200/docs |
 
-Use `localhost`, not `127.0.0.1`. The sign-in redirect and CSRF checks are set up for `http://localhost:3000`.
+### Demo accounts (password `demo1234`)
 
-**Using Qwen on Groq.** Put your key in `.env` as `GROQ_API_KEY=...` (never commit it or paste it anywhere else), then `docker compose up -d api worker`. Check what the model supports with:
-
-```bash
-docker compose run --rm --no-deps --entrypoint "python -m app.scripts.groq_live_check" api
-```
-
-Set `LLM_REQUESTS_PER_MINUTE` and `LLM_TOKENS_PER_MINUTE` to your Groq account's limits: every worker shares them.
-
-**Passkeys.** Mandates are signed with a passkey (fingerprint, face or screen lock). Browsers only allow passkeys on the host in `WEBAUTHN_RP_ID`, so open the app at `http://localhost:3000`. Shoppers manage their passkeys under Security. Test scripts sign with a labelled test signature instead, which needs `ALLOW_TEST_SIGNATURES=true`; set it to false anywhere real.
-
-**Upgrading an existing install** (one that was running before M1): update Keycloak's roles in place. Users and data are kept.
-
-```bash
-node infra/keycloak/migrate-roles-v5.mjs
-```
-
-### Demo accounts
-
-All passwords are `demo1234`. New sign-ups are shoppers.
-
-| Username | Role | Workspace |
+| User | Role | Try this |
 |---|---|---|
-| `sam` | Shopper | Mandates, AI shopping, purchases, balance |
-| `ada` | Seller (Ada's Provisions) | Orders, catalog, bank accounts |
-| `morgan` | Support analyst | Blocked carts, disputes, sellers |
-| `olivia` | Ops / LLM engineer | Overview, agent versions, run traces, evaluations, test marketplace, platform ledger |
-| `kemi` | Admin | Seller directory, users |
-| `rita`, `jordan` | Shopper | Other shoppers in the sandbox |
+| `sam` | Shopper | Browse the Marketplace, create a mandate, watch the AI shop, approve a payment |
+| `ada` | Seller | See paid orders and check their receipts |
+| `morgan` | Support | Carts the gate blocked, and why |
+| `olivia` | Ops | Run traces, evaluations, model limits |
+| `kemi` | Admin | Verify or suspend sellers |
 
-## Configuration
+## Use the real AI model
 
-Every setting lives in **`.env`** at the repository root. Docker Compose reads it and passes each value to the service that needs it:
+Without a key, a scripted stand-in plays the AI (clearly labelled). To use Qwen on Groq, add your key to `.env` and restart:
 
-| Where it goes | How |
-|---|---|
-| Postgres, API, web server | Environment variables set in `docker-compose.yml` from `.env` |
-| Keycloak realm (client secret, redirect URLs, audience, demo passwords) | `${…}` placeholders in `infra/keycloak/realm-scan-to-confirm.json`, filled when the realm is first imported |
-| Browser bundle (`NEXT_PUBLIC_*`) | Build arguments for the web image |
+```bash
+GROQ_API_KEY=your-key            # in .env, never committed
+docker compose up -d api worker
+```
 
-`.env.example` documents every variable and marks the ones to change outside local development. `.env` itself is git-ignored.
+Set `LLM_TOKENS_PER_MINUTE` and `LLM_REQUESTS_PER_MINUTE` to your Groq account's limits.
 
-**Mock API.** With `NEXT_PUBLIC_API_MOCKS=true` (the default), endpoints the backend doesn't have yet are served in the browser from [`web/src/mocks`](web/src/mocks):
-- mandates, AI shopping runs, carts, gate decisions, purchases and receipts;
-- sellers, support queues, agent versions, evaluations and test-marketplace reports.
+## Send real email (optional)
 
-Real endpoints (session, banks, name enquiry, ledger) always go to the API. As each backend milestone ships, its mock routes are deleted and the screens use the real API with no other changes. Mock state resets when the page reloads.
+Approval codes land in the sandbox inbox (http://localhost:8025). To send through Gmail, set in `.env`:
+
+```bash
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_STARTTLS=true
+SMTP_USERNAME=you@gmail.com
+SMTP_PASSWORD=your-google-app-password   # an app password, not your Gmail password
+MAIL_FROM=Mandate Gate <you@gmail.com>
+```
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  B[Browser] -->|session cookie| W[web: Next.js<br/>UI + BFF]
-  W -->|OIDC code flow + PKCE| K[keycloak]
-  B -->|login page| K
-  W -->|sessions| R[(redis)]
-  W -->|Bearer access token| A[api: FastAPI]
-  A -->|JWKS| K
-  A <-->|transfers, name enquiry /<br/>signed webhooks| S[switch: sandbox banks]
-  A -->|seller registry| M[marketplace: sandbox sellers]
-  A --> P[(postgres)]
-  K --> P
-```
+![Architecture](docs/diagrams/architecture.svg)
 
-| Service | Role |
+The worker runs the AI and can't pay. Only the api, through the gate, can ask the banks to move money.
+
+| Service | What it does |
 |---|---|
-| `web` | Next.js 16 (Redux Toolkit / RTK Query, Tailwind), organised by feature. Its server is the **backend-for-frontend**: it runs the Keycloak sign-in, keeps tokens in Redis, and proxies `/api/v1/*` to the API with the user's access token. The browser only holds an opaque httpOnly cookie. |
-| `api` | FastAPI + SQLAlchemy. Verifies every Keycloak access token. Owns mandates, runs and traces, the gate, the LLM gateway (`app/llm`), the agent (`app/agent`, prompts versioned as files), the seller directory and cart verification, the double-entry ledger and transfers. Alembic migrations run on start. |
-| `switch` | Sandbox inter-bank payment network with four fictional banks: name enquiry, transfers, status queries, signed webhooks, settlement report. |
-| `worker` | AI shopping runs (same image as `api`): takes runs off the Redis queue, interactive first, and runs the agent loop. Scale with `docker compose up -d --scale worker=N` or `WORKER_CONCURRENCY`. |
-| `marketplace` | Sandbox sellers (FastAPI): 20 honest and 3 dishonest, structured and photo-only catalogs (rendered with Pillow), delivery quotes, carts signed with each seller's Ed25519 key, and ground-truth labels for evaluating image reading. |
-| `keycloak` | Identity provider (OIDC). Roles: shopper, seller, analyst, ops, admin. |
-| `postgres` | App database and Keycloak's database. Ledger tables are append-only at the database level. |
-| `redis` | Web sessions and sign-in state; the run queue; live run events; shared model rate limits, circuit breakers, budgets and the model-answer cache. |
-
-## Evaluation
-
-Every agent release is measured on the real model with the same test sets (`services/api/evals/datasets`), and the result is committed
-next to the prompts as `services/api/evals/reports/<release>.json`. CI runs the release gate on those reports; it calls no model.
-
-```bash
-# In the api container (needs GROQ_API_KEY). Evaluations use their own token budget and the lowest priority.
-docker compose exec api python -m app.evals run --release shopper-2026.09.6            # all suites
-docker compose exec api python -m app.evals run --release shopper-2026.09.5 --model openai/gpt-oss-120b   # model comparison
-docker compose exec api python -m app.evals gate                                        # exit 1 if a candidate is worse than live
-docker compose exec api python -m app.evals snapshot-catalog                            # refresh the photo-catalog test set
-```
-
-Each suite result has a fingerprint of what produced it (prompt texts, models, settings, schemas, test set, and the code around the model).
-Change any of them and the gate calls the result out of date until you re-run it. Suites whose fingerprint didn't change are reused, not
-paid for again. The same verdict is on the Evaluations page (ops).
+| `web` | The app for every role. Its server handles sign-in and proxies the API, so the browser never holds tokens. |
+| `api` | Mandates, the gate, payments and ledger, receipts, the model gateway, evaluations. |
+| `worker` | Runs the AI shopper, one step at a time. Add more with `--scale worker=N`. |
+| `marketplace` | 23 test sellers (3 deliberately dishonest), with catalogs and signed carts. |
+| `switch` | 4 test banks: account name checks and transfers. |
+| `keycloak` | Accounts and roles. |
+| `postgres`, `redis` | Data; queue, live updates and shared rate limits. |
+| `mailpit` | Catches every email in the sandbox. |
 
 ## Tests
 
 ```bash
-# Unit tests (no database needed), the generated gate tests, and the release gate on the committed evaluation reports.
-# CI (.github/workflows/ci.yml) runs these and the web checks below.
-docker compose run --rm --no-deps --entrypoint "python -m pytest -q -p no:cacheprovider" api
-docker compose run --rm --no-deps --entrypoint "python -m pytest -q -p no:cacheprovider" marketplace
-
-# Web: types and lint
+# Unit tests, generated gate tests and the release gate (what CI runs)
+docker compose run --rm --no-deps --entrypoint "python -m pytest -q" api
 cd web && npx tsc --noEmit && npx eslint src
 
-# End-to-end, with the stack running
-node web/scripts/smoke-login.mjs             # Sign-in for every role, role pages, BFF proxy, CSRF, sign-out (non-destructive)
-node services/marketplace/tests/smoke_marketplace.mjs  # Browse, signed carts, cart verification, tampering and payee substitution caught, directory, seller workspace, tiers
-node services/api/tests/smoke_agent.mjs      # Mandate → AI run followed live (SSE) → gate decisions → approved cart paid, cancel, ops and support views
-node services/api/tests/smoke_payments.mjs   # Paying: receipt, 20 clicks pay once, 50 parallel approvals vs a 5-purchase mandate, cancel mid-payment, low funds, gate re-run, seller orders
-node services/api/tests/smoke_access.mjs     # Every role against another user's mandates, carts, purchases and passkeys (141 checks)
-node services/api/tests/load_fairness.mjs    # 20 shoppers + 1 heavy shopper at once share the model rate limit fairly (run with --scale worker=4)
-node services/api/tests/smoke_interbank.mjs  # Inter-bank payments through the sandbox switch (~90 s, non-destructive)
+# End to end, with the stack running
+node services/api/tests/smoke_payments.mjs        # pays once, never over the mandate, even under 50 parallel approvals
+node services/api/tests/smoke_access.mjs          # nobody sees or acts on another user's data
+node services/api/tests/smoke_agent.mjs           # the AI shops live; the gate blocks dishonest sellers
+node services/api/tests/smoke_email_approval.mjs  # approve with an email code
+node web/scripts/smoke-login.mjs                  # sign-in for every role
 ```
 
-The payment and access tests create test data and spend sandbox money (topping the shopper up by bank transfer when needed); they reset nothing. The unit tests include generated tests of the gate (`tests/test_gate_properties.py`, Hypothesis).
+Tests create data and spend sandbox money; they don't reset anything. Avoid `smoke_api.mjs`: it tests the previous product and **resets the demo data**.
 
-`services/api/tests/smoke_api.mjs` tests the previous product's wallet API and **resets the demo data** when it finishes.
+## Evaluation
 
-## Repository layout
+Every AI version runs the same tests on the real model before it can ship. Results are committed in `services/api/evals/reports/`, and CI blocks a version that gets worse.
+
+```bash
+docker compose exec api python -m app.evals run --release shopper-2026.09.6   # measure a version
+docker compose exec api python -m app.evals gate                               # is the candidate worse than live?
+```
+
+## Project layout
 
 ```text
-docker-compose.yml       The whole stack (all settings come from .env)
-.env.example             Every configuration variable, documented
-infra/keycloak/          Realm import and the M1 role migration
-infra/postgres/init/     Creates Keycloak's database
-services/api/            FastAPI service
-services/switch/         Sandbox inter-bank payment network
-services/marketplace/    Sandbox sellers, catalogs and signed carts
-web/                     Next.js app: src/features/* per feature, src/mocks for the mock API
-system_design.md         Design and milestones
-docs/archive/            Earlier designs
+services/api/          API, gate, payments, AI agent and prompts, evaluations
+services/marketplace/  Sandbox sellers
+services/switch/       Sandbox banks
+web/                   Next.js app (src/features/* by feature)
+infra/                 Keycloak realm and database setup
+system_design.md       The problem, the design and the milestones
 ```
+
+## Status
+
+M1–M7 are done: every screen, the marketplace, the AI shopper, mandates with passkeys, and real payments with receipts. M8 (evaluation) is finishing. Next: attack testing (M9), buying while you're away (M10), operations (M11), refunds and disputes (M12). See [`system_design.md`](system_design.md).
 
 ## Not production-ready
 
-- No real money: payments run on sandbox banks. A launch needs a licensed payment partner.
-- The receipt signing key's private half is stored in Postgres; production uses a KMS.
-- The `scan-cli` Keycloak client allows password login for tests only. Disable it in production.
-- The values in `.env.example` are development defaults. Replace everything marked CHANGE before deploying anywhere shared.
+- **No real money:** sandbox banks only. A launch needs a licensed payment partner.
+- **Signing key:** the receipt-signing key is stored in the database; production would use a key vault.
+- **Test-only settings:** the `scan-cli` test login and `ALLOW_TEST_SIGNATURES` must be turned off, and every value marked CHANGE in `.env.example` replaced.

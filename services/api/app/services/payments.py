@@ -38,7 +38,7 @@ from app.errors import ApiError
 from app.formatting import new_id, now
 from app.models import Account, AgentRun, Mandate, Merchant, Passkey, Purchase, RunStep, Transfer, User
 from app.security import Viewer
-from app.services import gate, interbank, ledger, mandates, merchants, network, passkeys, runqueue, signing
+from app.services import email_approval, gate, interbank, ledger, mandates, merchants, network, passkeys, runqueue, signing
 
 log = logging.getLogger("payments")
 
@@ -112,6 +112,27 @@ def _require_waiting(run: AgentRun) -> None:
         raise ApiError(409, "not_awaiting_approval", NOT_WAITING.get(run.status, "This cart isn't waiting for your approval."))
 
 
+def approval_methods(db: Session, viewer: Viewer, cart_id: str) -> dict:
+    """How this cart may be approved: always a passkey; an email code too for smaller carts (app/services/email_approval.py)."""
+    run = _run_for_cart(db, viewer, cart_id)
+    _require_waiting(run)
+    total = int(run.signed_cart["cart"]["totalMinor"])
+    return {"passkey": {"available": True}, "emailCode": email_approval.availability(viewer, total)}
+
+
+def send_email_code(db: Session, viewer: Viewer, cart_id: str) -> dict:
+    """Emails a one-time code that approves exactly this cart, and says what it approves."""
+    run = _run_for_cart(db, viewer, cart_id)
+    _require_waiting(run)
+    cart, view = run.signed_cart["cart"], run.cart_view or {}
+    payee = view.get("payee") or {}
+    return email_approval.send_code(
+        viewer, cart_id, cart_hash(run.signed_cart), int(cart["totalMinor"]), payee.get("nameOnAccount") or cart.get("sellerName", "the seller"),
+        f"{payee.get('bankName', '')} {payee.get('accountNumberMasked', '')}".strip(), view.get("sellerName") or cart.get("sellerName", "the seller"),
+        ", ".join(f"{ln['quantity']} × {ln['name']}" for ln in cart.get("lines", [])),
+    )
+
+
 def approval_options(db: Session, viewer: Viewer, cart_id: str) -> dict:
     """The WebAuthn challenge for approving this exact cart (it commits to the cart's hash)."""
     run = _run_for_cart(db, viewer, cart_id)
@@ -119,9 +140,11 @@ def approval_options(db: Session, viewer: Viewer, cart_id: str) -> dict:
     return passkeys.signing_options(db, viewer, cart_hash(run.signed_cart), purpose="cart")
 
 
-def _check_approval(db: Session, viewer: Viewer, digest: str, signature: dict) -> tuple[str, str, int | None]:
+def _check_approval(db: Session, viewer: Viewer, digest: str, signature: dict, *, cart_id: str, total: int) -> tuple[str, str, int | None]:
     """Returns (kind, evidence JSON, passkey id)."""
     kind = signature.get("kind")
+    if kind == "email_code":
+        return "email_code", email_approval.check_code(viewer, cart_id, digest, total, signature.get("code")), None
     if kind == "passkey":
         if not (signature.get("challengeId") and signature.get("credential")):
             raise ApiError(422, "unapproved", "Approve the payment with your passkey first.")
@@ -152,7 +175,7 @@ def approve(db: Session, viewer: Viewer, cart_id: str, signature: dict) -> Purch
         raise ApiError(403, "no_wallet", "This account doesn't have a balance to pay from.")
     signed = run.signed_cart
     digest = cart_hash(signed)
-    approval_kind, approval, passkey_id = _check_approval(db, viewer, digest, signature)
+    approval_kind, approval, passkey_id = _check_approval(db, viewer, digest, signature, cart_id=cart_id, total=int(signed["cart"]["totalMinor"]))
 
     at = now()
     verification = merchants.verify_cart(db, signed, at)  # Network call: before any lock.
@@ -543,6 +566,9 @@ def verify_receipt(db: Session, token: str) -> dict:
                 "detail": "The shopper's passkey signed this exact cart" if ok else "The shopper's approval doesn't verify",
             }
         )
+    elif p.approval_kind == "email_code":
+        checks.append({"label": "Shopper approved this cart", "result": "warn",
+                       "detail": "Approved with a one-time code sent to the shopper's verified email: weaker than a passkey signature"})
     else:
         checks.append(
             {"label": "Shopper approved this cart", "result": "warn", "detail": "Approved by a sandbox test script, not a passkey"}

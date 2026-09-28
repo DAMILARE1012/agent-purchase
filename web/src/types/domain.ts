@@ -283,7 +283,7 @@ export interface PurchaseReceipt {
   networkSessionId: string;
   signingKeyId: string;
   /** How the shopper approved the payment: their passkey, or a sandbox test script. */
-  approvalKind?: "passkey" | "test";
+  approvalKind?: "passkey" | "email_code" | "test";
 }
 
 export interface Purchase {
@@ -307,6 +307,17 @@ export interface CartApprovalOptions {
   challengeId: string;
   cartHash: string;
   publicKey: Record<string, unknown>;
+}
+
+/** How a cart may be approved: a passkey always; an email code for smaller carts, when email is set up. */
+export interface ApprovalMethods {
+  passkey: { available: boolean };
+  emailCode: { available: boolean; reason: string | null; limitMinor: number; sentTo: string | null };
+}
+
+export interface EmailCodeSent {
+  sentTo: string;
+  expiresInSeconds: number;
 }
 
 export interface ReceiptVerification {

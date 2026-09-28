@@ -317,11 +317,11 @@
      "id": "hypothesis",
      "passed": 4,
      "failed": 0,
-     "output": "....                                                                     [100%]\n=============================== warnings summary ===============================\ntests/test_gate_properties.py::test_honest_carts_are_never_refused\ntests/test_gate_properties.py::test_every_rule_breaking_cart_is_refused\ntests/test_gate_properties.py::test_combined_violations_are_all_reported\ntests/test_gate_properties.py::test_changing_a_signed_cart_breaks_the_seller_signature\n  /usr/local/lib/python3.12/site-packages/hypothesis/_settings.py:847: HypothesisWarning: The database setting is not configured, and the default location is unusable - falling back to an in-memory database for this session.  path=PosixPath('/srv/.hypothesis/examples')\n    self._fallback.database if self._database is not_set else self._database\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n4 passed, 4 warnings in 7.87s\n"
+     "output": "....                                                                     [100%]\n=============================== warnings summary ===============================\ntests/test_gate_properties.py::test_honest_carts_are_never_refused\ntests/test_gate_properties.py::test_every_rule_breaking_cart_is_refused\ntests/test_gate_properties.py::test_combined_violations_are_all_reported\ntests/test_gate_properties.py::test_changing_a_signed_cart_breaks_the_seller_signature\n  /usr/local/lib/python3.12/site-packages/hypothesis/_settings.py:847: HypothesisWarning: The database setting is not configured, and the default location is unusable - falling back to an in-memory database for this session.  path=PosixPath('/srv/.hypothesis/examples')\n    self._fallback.database if self._database is not_set else self._database\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n4 passed, 4 warnings in 9.57s\n"
     }
    ],
-   "runAt": "2026-09-28T08:43:55.904898Z",
-   "wallMs": 9920,
+   "runAt": "2026-09-28T09:21:19.977812Z",
+   "wallMs": 11635,
    "tokens": 0,
    "costMicroUsd": 0,
    "reusedFrom": "shopper-2026.09.5",

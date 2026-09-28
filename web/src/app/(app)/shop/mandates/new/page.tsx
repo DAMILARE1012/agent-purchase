@@ -3,6 +3,8 @@ import { NewMandateFlow } from "@/features/mandates";
 
 export const metadata: Metadata = { title: "New mandate" };
 
-export default function NewMandateFlowPage() {
-  return <NewMandateFlow />;
+/** `?request=` pre-fills the sentence (from the marketplace's "Ask the AI to buy this"). */
+export default async function NewMandateFlowPage({ searchParams }: PageProps<"/shop/mandates/new">) {
+  const { request } = await searchParams;
+  return <NewMandateFlow initialRequest={typeof request === "string" ? request.slice(0, 500) : ""} />;
 }

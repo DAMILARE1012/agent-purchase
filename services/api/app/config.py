@@ -64,6 +64,18 @@ class Settings(BaseSettings):
     # because scripts can't use a fingerprint sensor. Browsers always need a passkey. Never enable in production.
     allow_test_signatures: bool = False
 
+    # Email (approval codes). The sandbox sends to Mailpit; Gmail or a mail service in production (see .env.example).
+    smtp_host: str = ""
+    smtp_port: int = 1025
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_starttls: bool = False
+    smtp_ssl: bool = False
+    mail_from: str = "Mandate Gate <no-reply@mandate-gate.local>"
+    # Carts up to this amount may be approved with an email code; above it, only a passkey (kobo; ₦50,000).
+    email_approval_max_minor: int = 5_000_000
+    email_code_ttl_seconds: int = 300
+
     # ---- Agent runtime ----
     agent_max_steps: int = 12
     agent_max_tokens_per_run: int = 80_000

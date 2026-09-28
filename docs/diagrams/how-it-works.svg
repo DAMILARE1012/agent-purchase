@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 560" width="1280" height="560" role="img" aria-label="How a purchase works: you ask, Qwen drafts a mandate you sign, the AI shopper proposes a cart, the gate checks it, you approve, the bank transfer is made, and a signed receipt is issued. A cart that breaks a rule is refused and nothing is paid.">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475467"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c0271c"/>
+    </marker>
+    <style>
+      .t { font-family: "Segoe UI", Helvetica, Arial, sans-serif; fill: #0b1220; }
+      .title { font-size: 17px; font-weight: 700; }
+      .body { font-size: 13px; fill: #3b4455; }
+      .label { font-size: 12px; fill: #475467; }
+      .num { font-size: 13px; font-weight: 700; fill: #ffffff; }
+      .tag { font-size: 11px; font-weight: 700; letter-spacing: 0.4px; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="560" fill="#ffffff"/>
+
+  <!-- Outside services: the model (top) -->
+  <rect x="209" y="36" width="328" height="64" rx="12" fill="#eef0fd" stroke="#3f46b8" stroke-width="1.5"/>
+  <text class="t title" x="373" y="64" text-anchor="middle">Qwen on Groq</text>
+  <text class="t body" x="373" y="85" text-anchor="middle">the AI model</text>
+  <line x1="273" y1="100" x2="273" y2="194" stroke="#475467" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text class="t label" x="281" y="152">drafts the limits</text>
+  <line x1="462" y1="100" x2="462" y2="194" stroke="#475467" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text class="t label" x="470" y="146">decides each step,</text>
+  <text class="t label" x="470" y="162">reads photos</text>
+
+  <!-- What happens when a rule is broken (top) -->
+  <rect x="565" y="36" width="150" height="64" rx="32" fill="#fdeeec" stroke="#c0271c" stroke-width="1.5"/>
+  <text class="t title" x="640" y="63" text-anchor="middle" fill="#c0271c">Refused</text>
+  <text class="t body" x="640" y="84" text-anchor="middle">nothing is paid</text>
+  <line x1="640" y1="196" x2="640" y2="104" stroke="#c0271c" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow-red)"/>
+  <text class="t label" x="648" y="152" fill="#c0271c">a rule is broken</text>
+
+  <!-- The main flow -->
+  <!-- 1 You ask -->
+  <rect x="31" y="200" width="150" height="130" rx="12" fill="#ffffff" stroke="#cdd2da" stroke-width="1.5"/>
+  <circle cx="53" cy="222" r="12" fill="#0b1220"/><text class="t num" x="53" y="227" text-anchor="middle">1</text>
+  <text class="t title" x="47" y="262">You ask</text>
+  <text class="t body" x="47" y="284">Say what you want,</text>
+  <text class="t body" x="47" y="302">in plain words</text>
+
+  <!-- 2 Mandate -->
+  <rect x="209" y="200" width="150" height="130" rx="12" fill="#ffffff" stroke="#cdd2da" stroke-width="1.5"/>
+  <circle cx="231" cy="222" r="12" fill="#0b1220"/><text class="t num" x="231" y="227" text-anchor="middle">2</text>
+  <text class="t title" x="225" y="262">Mandate</text>
+  <text class="t body" x="225" y="284">Exact limits you check</text>
+  <text class="t body" x="225" y="302">and sign with your</text>
+  <text class="t body" x="225" y="320">passkey</text>
+
+  <!-- 3 AI shopper: can suggest, can't pay -->
+  <rect x="387" y="200" width="150" height="130" rx="12" fill="#fdf4e6" stroke="#9a5a00" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <circle cx="409" cy="222" r="12" fill="#0b1220"/><text class="t num" x="409" y="227" text-anchor="middle">3</text>
+  <text class="t tag" x="428" y="226" fill="#9a5a00">CAN'T PAY</text>
+  <text class="t title" x="403" y="262">AI shopper</text>
+  <text class="t body" x="403" y="284">Searches sellers,</text>
+  <text class="t body" x="403" y="302">reads catalogs,</text>
+  <text class="t body" x="403" y="320">proposes a cart</text>
+
+  <!-- 4 Gate: the only path to money -->
+  <rect x="565" y="200" width="150" height="130" rx="12" fill="#e8f6ef" stroke="#0c7a4a" stroke-width="2.5"/>
+  <circle cx="587" cy="222" r="12" fill="#0b1220"/><text class="t num" x="587" y="227" text-anchor="middle">4</text>
+  <text class="t tag" x="606" y="226" fill="#0c7a4a">OUTSIDE THE AI</text>
+  <text class="t title" x="581" y="262">Gate</text>
+  <text class="t body" x="581" y="284">9 checks in plain</text>
+  <text class="t body" x="581" y="302">code: limits, item,</text>
+  <text class="t body" x="581" y="320">seller, payee</text>
+
+  <!-- 5 You approve -->
+  <rect x="743" y="200" width="150" height="130" rx="12" fill="#ffffff" stroke="#cdd2da" stroke-width="1.5"/>
+  <circle cx="765" cy="222" r="12" fill="#0b1220"/><text class="t num" x="765" y="227" text-anchor="middle">5</text>
+  <text class="t title" x="759" y="262">You approve</text>
+  <text class="t body" x="759" y="284">The exact cart, with</text>
+  <text class="t body" x="759" y="302">your passkey (or an</text>
+  <text class="t body" x="759" y="320">email code ≤ ₦50k)</text>
+
+  <!-- 6 Bank transfer -->
+  <rect x="921" y="200" width="150" height="130" rx="12" fill="#ffffff" stroke="#cdd2da" stroke-width="1.5"/>
+  <circle cx="943" cy="222" r="12" fill="#0b1220"/><text class="t num" x="943" y="227" text-anchor="middle">6</text>
+  <text class="t title" x="937" y="262">Payment</text>
+  <text class="t body" x="937" y="284">Checked again, then</text>
+  <text class="t body" x="937" y="302">sent by bank transfer</text>
+  <text class="t body" x="937" y="320">to the seller</text>
+
+  <!-- 7 Signed receipt -->
+  <rect x="1099" y="200" width="150" height="130" rx="12" fill="#ffffff" stroke="#cdd2da" stroke-width="1.5"/>
+  <circle cx="1121" cy="222" r="12" fill="#0b1220"/><text class="t num" x="1121" y="227" text-anchor="middle">7</text>
+  <text class="t title" x="1115" y="262">Receipt</text>
+  <text class="t body" x="1115" y="284">Signed. The seller</text>
+  <text class="t body" x="1115" y="302">(or anyone) can</text>
+  <text class="t body" x="1115" y="320">verify it</text>
+
+  <!-- Flow arrows -->
+  <line x1="181" y1="265" x2="205" y2="265" stroke="#475467" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="359" y1="265" x2="383" y2="265" stroke="#475467" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="537" y1="265" x2="561" y2="265" stroke="#475467" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="715" y1="265" x2="739" y2="265" stroke="#475467" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="893" y1="265" x2="917" y2="265" stroke="#475467" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="1071" y1="265" x2="1095" y2="265" stroke="#475467" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Outside services: sellers and banks (bottom) -->
+  <rect x="387" y="412" width="150" height="64" rx="12" fill="#f5f6f8" stroke="#cdd2da" stroke-width="1.5"/>
+  <text class="t title" x="462" y="440" text-anchor="middle">Sellers</text>
+  <text class="t body" x="462" y="461" text-anchor="middle">the marketplace</text>
+  <line x1="462" y1="336" x2="462" y2="408" stroke="#475467" stroke-width="1.5" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text class="t label" x="470" y="366">catalogs,</text>
+  <text class="t label" x="470" y="382">signed carts</text>
+
+  <rect x="565" y="412" width="506" height="64" rx="12" fill="#f5f6f8" stroke="#cdd2da" stroke-width="1.5"/>
+  <text class="t title" x="818" y="440" text-anchor="middle">Banks</text>
+  <text class="t body" x="818" y="461" text-anchor="middle">the payment network</text>
+  <line x1="640" y1="336" x2="640" y2="408" stroke="#475467" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text class="t label" x="648" y="366">"who owns this</text>
+  <text class="t label" x="648" y="382">account?"</text>
+  <line x1="996" y1="336" x2="996" y2="408" stroke="#475467" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text class="t label" x="1004" y="374">transfer</text>
+
+  <!-- Legend -->
+  <rect x="31" y="512" width="14" height="14" rx="3" fill="#e8f6ef" stroke="#0c7a4a" stroke-width="2"/>
+  <text class="t label" x="53" y="524">Only the gate can let money leave</text>
+  <rect x="283" y="512" width="14" height="14" rx="3" fill="#fdf4e6" stroke="#9a5a00" stroke-dasharray="3 2"/>
+  <text class="t label" x="305" y="524">The AI can suggest a cart, never pay</text>
+</svg>

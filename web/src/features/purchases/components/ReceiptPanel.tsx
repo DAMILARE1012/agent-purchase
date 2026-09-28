@@ -9,6 +9,12 @@ import { receiptLink } from "../lib/token";
 
 const noSubscribe = () => () => {};
 
+const APPROVED_WITH: Record<NonNullable<PurchaseReceipt["approvalKind"]>, string> = {
+  passkey: "Your passkey, over this exact cart",
+  email_code: "A one-time code sent to your email (weaker than a passkey)",
+  test: "A sandbox test script (not a passkey)",
+};
+
 /** The signed receipt: a QR the seller scans, and everything it binds together. */
 export function ReceiptPanel({ receipt }: { receipt: PurchaseReceipt }) {
   const origin = useSyncExternalStore(noSubscribe, () => window.location.origin, () => "");
@@ -22,7 +28,7 @@ export function ReceiptPanel({ receipt }: { receipt: PurchaseReceipt }) {
     ["Bank session ID", receipt.networkSessionId],
     ["Signing key", receipt.signingKeyId],
     ...(receipt.approvalKind
-      ? [["You approved with", receipt.approvalKind === "passkey" ? "Your passkey, over this exact cart" : "A sandbox test script (not a passkey)"] as [string, string]]
+      ? [["You approved with", APPROVED_WITH[receipt.approvalKind]] as [string, string]]
       : []),
   ];
 
