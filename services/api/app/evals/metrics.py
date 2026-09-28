@@ -10,12 +10,29 @@ POLICY_RANK = {"verified_only": 0, "listed": 0, "verified_and_known": 1}
 MONEY_FIELDS = ("maxTotalMinor", "periodCapMinor")
 
 
+# Service-level limits for latency. Latency is judged against these, never against another run: on a few dozen
+# samples through a shared provider it swings by half between two runs of the same release.
+LATENCY_SLO_MS = {"p95 model latency": 5_000, "p95 model time per task": 60_000}
+
+
+def passes(value: float, better: str, threshold: float | None, n: int) -> bool:
+    # Nothing to measure (no case of this kind in the set): not a failure. The UI shows it as not measured.
+    return n == 0 or threshold is None or (value >= threshold if better == "higher" else value <= threshold)
+
+
 def metric(name: str, value: float, unit: str, better: str, threshold: float | None, n: int) -> dict:
     """One metric. `n` is how many cases (or fields, items) it's measured over; the release gate uses it to allow for noise."""
     value = round(value, 4)
-    # Nothing to measure (no case of this kind in the set): not a failure. The UI shows it as not measured.
-    ok = n == 0 or threshold is None or (value >= threshold if better == "higher" else value <= threshold)
-    return {"name": name, "value": value, "unit": unit, "better": better, "threshold": threshold, "pass": ok, "n": n}
+    threshold = LATENCY_SLO_MS.get(name, threshold)
+    return {
+        "name": name,
+        "value": value,
+        "unit": unit,
+        "better": better,
+        "threshold": threshold,
+        "pass": passes(value, better, threshold, n),
+        "n": n,
+    }
 
 
 def pct(k: int, n: int) -> float:

@@ -91,6 +91,34 @@ dialog::backdrop {
 
 /* ---- Landing page ---------------------------------------------------------- */
 
+/* The public pages are always white, whatever the device theme: a calm, bank-like surface. */
+.theme-light {
+  --canvas: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f5f6f8;
+  --ink: #0b1220;
+  --ink-2: #3b4455;
+  --muted: #667085;
+  --line: #e7e9ee;
+  --line-strong: #cdd2da;
+  --truth: #0c7a4a;
+  --truth-bg: #e8f6ef;
+  --crypto: #3f46b8;
+  --crypto-bg: #eef0fd;
+  --ai: #9a5a00;
+  --ai-bg: #fdf4e6;
+  --bad: #c0271c;
+  --bad-bg: #fdeeec;
+  color-scheme: light;
+  background: #ffffff;
+  color: var(--ink);
+}
+
+.bg-grid {
+  background-image: linear-gradient(to right, var(--line) 1px, transparent 1px), linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
 .bg-dots {
   background-image: radial-gradient(var(--line-strong) 1px, transparent 1px);
   background-size: 22px 22px;

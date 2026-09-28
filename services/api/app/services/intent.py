@@ -157,6 +157,7 @@ def compile_draft(viewer: Viewer, request: str, mode: str) -> dict:
     """The shopper's draft, from the live release."""
     draft = compile_with(releases.live(), request, mode, user_id=viewer.user.id)
     draft.pop("model", None)
+    draft.pop("modelError", None)
     return draft
 
 
@@ -184,8 +185,8 @@ def compile_with(release: releases.Release, request: str, mode: str, *, user_id:
             schema=INTENT, schema_name="mandate_draft", models=release.route("intent.compile"), params=release.params.get("intent.compile", {}),
             user_id=user_id, priority=priority, cacheable=cacheable, sandbox_state={"rules": rules, "request": request},
         ))
-    except (LlmUnavailable, BudgetExceeded):
-        return {**rules, "evidence": {}, "compiledBy": "rules only (the model was unavailable)"}
+    except (LlmUnavailable, BudgetExceeded) as exc:
+        return {**rules, "evidence": {}, "compiledBy": "rules only (the model was unavailable)", "modelError": str(exc)[:500]}
 
     kept, used = ground(result.output, request, today)
     merged = merge(rules, kept, used, mode)

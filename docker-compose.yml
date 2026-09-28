@@ -108,7 +108,7 @@ services:
       AGENT_RUN_TIMEOUT_SECONDS: ${AGENT_RUN_TIMEOUT_SECONDS:-300}
       WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-localhost}
       ALLOW_TEST_SIGNATURES: ${ALLOW_TEST_SIGNATURES:-false}
-      LLM_EVAL_DAILY_TOKENS: ${LLM_EVAL_DAILY_TOKENS:-3000000}
+      LLM_EVAL_DAILY_TOKENS: ${LLM_EVAL_DAILY_TOKENS:-120000}
     ports:
       - "${API_PORT:?API_PORT is not set}:8000"
     # Development: evaluation reports written in the container land in the repo, next to the prompts they measured.

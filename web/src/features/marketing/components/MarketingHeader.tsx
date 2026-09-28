@@ -5,13 +5,13 @@ import { buttonClasses } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
 import { homeFor } from "@/components/layout/navigation";
 import { useViewer } from "@/features/session";
-import { SIGN_IN_HREF, SIGN_UP_HREF } from "../lib/links";
+import { SIGN_IN_HREF, SIGN_UP_HREF, VERIFY_HREF } from "../lib/links";
 
 const LINKS = [
   { href: "#how", label: "How it works" },
-  { href: "#protection", label: "What it stops" },
-  { href: "#who", label: "Who it's for" },
-  { href: "#security", label: "Security" },
+  { href: "#gate", label: "The gate" },
+  { href: "#sellers", label: "For sellers" },
+  { href: "#evidence", label: "Evidence" },
   { href: "#faq", label: "FAQ" },
 ];
 
@@ -19,26 +19,28 @@ export function MarketingHeader() {
   const { user, isSignedIn, isLoading } = useViewer();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line/70 bg-canvas/85 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
-        <Link href="/" className="flex shrink-0 items-center gap-2 font-display text-lg font-bold whitespace-nowrap">
-          <span aria-hidden="true" className="grid size-7 place-items-center rounded-md bg-ink text-canvas"><Icon name="shield" className="size-4" /></span>
+    <header className="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-8 px-4">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5 font-display text-lg font-bold whitespace-nowrap">
+          <span aria-hidden="true" className="grid size-8 place-items-center rounded-lg bg-ink text-white"><Icon name="shield" className="size-4" /></span>
           Mandate Gate
         </Link>
         <nav aria-label="Page sections" className="hidden flex-1 items-center gap-1 md:flex">
           {LINKS.map((l) => (
-            <a key={l.href} href={l.href} className="rounded-md px-3 py-1.5 text-sm font-semibold text-muted transition-colors hover:text-ink">
+            <a key={l.href} href={l.href} className="rounded-md px-3 py-1.5 text-sm font-semibold text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink">
               {l.label}
             </a>
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-2 md:ml-0">
+          {/* Wrapped: the button's own inline-flex would override a `hidden` on the link itself. */}
+          <span className="hidden lg:block">
+            <a href={VERIFY_HREF} className={buttonClasses("ghost", "sm", "whitespace-nowrap")}>Verify a receipt</a>
+          </span>
           {isLoading ? (
             <div className="h-8 w-40 animate-pulse rounded-md bg-surface-2" />
           ) : isSignedIn ? (
-            <Link href={homeFor(user?.role)} className={buttonClasses("primary", "sm", "whitespace-nowrap")}>
-              Open the app
-            </Link>
+            <Link href={homeFor(user?.role)} className={buttonClasses("primary", "sm", "whitespace-nowrap")}>Open the app</Link>
           ) : (
             <>
               <span className="hidden sm:block">

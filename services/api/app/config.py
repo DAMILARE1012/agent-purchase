@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     # Share of the per-minute capacity only interactive runs (a shopper watching) may use.
     llm_interactive_reserve: float = 0.2
     llm_user_daily_tokens: int = 300_000
-    llm_eval_daily_tokens: int = 3_000_000
+    llm_eval_daily_tokens: int = 120_000  # Under Groq's daily limit, so shoppers keep capacity
     llm_timeout_seconds: float = 30.0
     # USD per million tokens, "model=input/output;...". Check Groq's pricing page; these are placeholders.
     llm_prices: str = "qwen/qwen3.8-27b=0.30/0.60;openai/gpt-oss-120b=0.15/0.60;openai/gpt-oss-20b=0.075/0.30"

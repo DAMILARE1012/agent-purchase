@@ -49,7 +49,11 @@ def run(args) -> int:
             continue
         log(f"{suite}: running on {release.id} ({release.model}, {provider})")
         started = time.monotonic()
-        cases, metrics = suites.RUNNERS[suite](release, log, args.limit)
+        try:
+            cases, metrics = suites.RUNNERS[suite](release, log, args.limit)
+        except suites.EvalAborted as exc:
+            log(f"  STOPPED, nothing saved: the provider failed, not the model. {exc}")
+            return 3
         result = {
             "suite": suite,
             "fingerprint": fp,

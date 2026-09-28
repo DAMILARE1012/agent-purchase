@@ -1,17 +1,76 @@
+# ---- Secrets and local configuration ------------------------------------------------
+# .env holds the Groq API key and every local password. Only the template is committed.
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.p12
+secrets/
+
+# ---- Claude Code and other AI assistants ------------------------------------------------
+.claude/
+**/.claude/
+CLAUDE.md
+**/CLAUDE.md
+CLAUDE.local.md
+**/CLAUDE.local.md
+# Written by `next dev` for coding agents (see web/AGENTS.md).
+AGENTS.md
+**/AGENTS.md
+.cursor/
+.aider*
+.continue/
+
+# ---- Python -------------------------------------------------------------------------------
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
 .pytest_cache/
 .ruff_cache/
-.venv/
+.mypy_cache/
+# Hypothesis' example database (tests/test_gate_properties.py)
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+
+# ---- Node / Next.js ----------------------------------------------------------------------------
 node_modules/
 .next/
+out/
+build/
 *.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.vercel/
+coverage/
+playwright-report/
+test-results/
+
+# ---- Local data --------------------------------------------------------------------------------
+# The switch's SQLite ledger and any other local databases.
 *.sqlite
 *.sqlite3
 *.db
+*.db-journal
 
+# ---- Logs, editors and operating systems ------------------------------------------------------
+*.log
+logs/
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+*.swp
+*.swo
+.vscode/*
+!.vscode/extensions.json
 
-.claude/
+# Kept on purpose (don't ignore): services/api/evals/ (test sets and evaluation reports are
+# release artifacts, committed next to the prompts they measure) and .github/ (CI).

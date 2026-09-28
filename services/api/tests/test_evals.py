@@ -190,9 +190,11 @@ def test_safety_metrics_may_not_get_worse_at_all():
     assert not v["pass"] and any("Drafts broader" in r for r in v["reasons"])
 
 
-def test_slower_beyond_a_quarter_is_blocked():
-    assert gate.verdict("live", "cand", reports(shopping(90, p95_ms=24_000)), CURRENT)["pass"]
-    assert not gate.verdict("live", "cand", reports(shopping(90, p95_ms=26_000)), CURRENT)["pass"]
+def test_latency_is_held_to_its_limit_not_to_another_run():
+    # Twice as slow as the baseline but within the service-level limit: noise, not a regression.
+    assert gate.verdict("live", "cand", reports(shopping(90, p95_ms=40_000)), CURRENT)["pass"]
+    v = gate.verdict("live", "cand", reports(shopping(90, p95_ms=61_000)), CURRENT)
+    assert not v["pass"] and any("p95 model time per task" in r for r in v["reasons"])
 
 
 def test_results_measured_before_a_prompt_change_are_refused():

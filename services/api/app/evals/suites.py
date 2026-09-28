@@ -29,6 +29,17 @@ from app.services.runs import EVAL_USER_ID
 
 WAT = timedelta(hours=1)
 Log = Callable[[str], None]
+# Provider limits, not model behaviour: a suite that hits one is stopped and nothing is saved.
+_INFRASTRUCTURE = ("per day", "(TPD)", "(RPD)", "circuit open", "No model capacity", "daily AI budget", "network")
+
+
+class EvalAborted(Exception):
+    """The measurement itself failed (quota, outage). Scoring it would blame the model for the provider."""
+
+
+def _check_infrastructure(error: str | None, where: str) -> None:
+    if error and any(s.lower() in error.lower() for s in _INFRASTRUCTURE):
+        raise EvalAborted(f"{where}: {error[:300]}")
 
 
 def ensure_eval_user(db: Session) -> None:
@@ -47,6 +58,7 @@ def run_intent(release: Release, log: Log, limit: int | None = None) -> tuple[li
     results = []
     for case in data["cases"][:limit]:
         draft = intent.compile_with(release, case["request"], case["mode"], user_id=EVAL_USER_ID, priority="eval", cacheable=False, now=at)
+        _check_infrastructure(draft.get("modelError"), case["id"])
         r = metrics.score_intent(case, draft)
         results.append(r)
         log(
@@ -86,6 +98,7 @@ def run_catalog(release: Release, log: Log, limit: int | None = None) -> tuple[l
                 image, res.output, latency_ms=res.latency_ms, tokens=res.tokens_in + res.tokens_out, cost_micro_usd=res.cost_micro_usd
             )
         except (LlmUnavailable, BudgetExceeded) as exc:
+            _check_infrastructure(str(exc), image["url"])
             r = metrics.score_catalog(image, None, error=str(exc)[:300])
         results.append(r)
         log(
@@ -188,6 +201,7 @@ def _run_task(db: Session, release: Release, task: dict, limits: dict) -> dict:
 
     db.expire_all()
     run = db.get(AgentRun, run.id)
+    _check_infrastructure(run.error, f"{task['id']} ({run.id})")
     cart = (run.signed_cart or {}).get("cart") or {}
     items = {i["sku"]: i for i in marketplace.seller_items(cart["sellerId"])} if cart else {}
     model_ms = db.scalar(select(func.coalesce(func.sum(InferenceLog.latency_ms), 0)).where(InferenceLog.run_id == run.id)) or 0

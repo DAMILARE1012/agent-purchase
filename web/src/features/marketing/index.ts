@@ -1,4 +1,6 @@
+export { AssuranceBar } from "./components/AssuranceBar";
 export { Audience } from "./components/Audience";
+export { Evidence } from "./components/Evidence";
 export { Faq } from "./components/Faq";
 export { FinalCta } from "./components/FinalCta";
 export { Hero } from "./components/Hero";
